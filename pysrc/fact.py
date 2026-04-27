@@ -184,7 +184,7 @@ class Fact:
                 #    print(f"ERROR: can't load fact '{data}'")
                 #    return 2
                 #fact_has.append(data)
-                return 1 # FIXME
+                return 1  # TODO: handle 'has' with bare string value (no dict)
             case dict():
                 print("'has' tag data type is 'dict'")
                 ret_status = self.parse_construct_tag_has_dict(data)

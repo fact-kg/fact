@@ -15,7 +15,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Check a fact")
     # Positional argument fact_name (required)
-    parser.add_argument("name", help="The name of the user.")
+    parser.add_argument("name", help="Fact path, e.g. math/function")
     args = parser.parse_args()
 
     fact_name = args.name
@@ -50,8 +50,10 @@ def main():
     fact = Fact(kg, fact_name)
     if 0 != fact.construct():
         print("ERROR: can not construct fact")
+        return 3
 
     return 0
 
 if __name__ == "__main__":
-    main()
+    import sys
+    sys.exit(main())

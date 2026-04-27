@@ -1,4 +1,5 @@
-has:
-  description:
-    type: str
-    value: "connects accelerators"
+- is: switch
+- has:
+    description:
+      type: str
+      value: "connects accelerators"

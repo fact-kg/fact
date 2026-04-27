@@ -1,1 +1,2 @@
-alias: computer/com/ualink/protocol_level_interface
+- is:
+    type: computer/com/ualink/protocol_level_interface

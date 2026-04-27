@@ -1,9 +1,10 @@
-has:
-  physical_layer:
-    type: computer/com/ualink/physical_layer
-  data_link_layer:
-    type: computer/com/ualink/data_link_layer
-  transaction_layer:
-    type: computer/com/ualink/transaction_layer
-  protocol_layer:
-    type: computer/com/ualink/protocol_layer
+- is: stack layers
+- has:
+    physical_layer:
+      type: computer/com/ualink/physical_layer
+    data_link_layer:
+      type: computer/com/ualink/data_link_layer
+    transaction_layer:
+      type: computer/com/ualink/transaction_layer
+    protocol_layer:
+      type: computer/com/ualink/protocol_layer

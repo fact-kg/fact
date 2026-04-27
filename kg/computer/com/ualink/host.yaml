@@ -1,4 +1,4 @@
-has:
-  host_cpu:
-    type: computer/cpu
-
+- is: host
+- has:
+    host_cpu:
+      type: computer/cpu

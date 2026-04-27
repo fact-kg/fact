@@ -1,8 +1,9 @@
-has:
-  description:
-    type: str
-    value: |
-      The collection of all the Accelerators and Switches
-      physically connected though UALink via Switches.
-  switch:
-    type: computer/com/ualink/switch
+- is: pod
+- has:
+    description:
+      type: str
+      value: |
+        The collection of all the Accelerators and Switches
+        physically connected though UALink via Switches.
+    switch:
+      type: computer/com/ualink/switch

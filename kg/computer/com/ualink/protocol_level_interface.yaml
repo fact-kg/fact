@@ -1,7 +1,8 @@
-has:
-  description:
-    type: str
-    value: |
-      The UALink Protocol Level Interface is a point-to-point,
-      on-chip interface comprised of various channels that transfer UPLI transactions consisting of
-      Requests, Read data, Write data, and Request Responses between an Originator and a Completer.
+- is: protocol level interface
+- has:
+    description:
+      type: str
+      value: |
+        The UALink Protocol Level Interface is a point-to-point,
+        on-chip interface comprised of various channels that transfer UPLI transactions consisting of
+        Requests, Read data, Write data, and Request Responses between an Originator and a Completer.

@@ -51,6 +51,7 @@ class Kg(KgIface):
         yaml_str: str = open(
             path, "r", encoding="utf-8"
         ).read()
+        # YAML array becomes the "def" (definition) list of tags
         self.data[fact_name] = { "def": yaml.safe_load(yaml_str) }
         if not self.validate_schema(self.data[fact_name]["def"]):
             return 1

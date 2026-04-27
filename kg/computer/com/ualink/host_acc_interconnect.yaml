@@ -1,6 +1,5 @@
-has:
-  description:
-    value: |
+- is: host accelerator interconnect
+- has:
+    description: |
       Host and Accelerator (Acc) are connected using an implementation chosen interconnect
       such as CXL, PCIe, AMD Infinity Fabric, XGMI, CHI c2c, etc.
-
