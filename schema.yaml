@@ -52,6 +52,8 @@ items:
     has:
       type: object
       description: Declares properties this entity possesses
+      minProperties: 1
+      maxProperties: 1
       additionalProperties:
         oneOf:
           - description: Explicit form with type declared

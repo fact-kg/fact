@@ -4,5 +4,6 @@
 - has:
     inputs:
       type: list
+- has:
     outputs:
       type: list

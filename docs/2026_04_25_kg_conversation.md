@@ -695,3 +695,107 @@ Can you make a file with our conversation?
 ## Claude
 
 *(Claude generated a Word document with the full conversation.)*
+
+---
+
+## Addendum: Current Implementation Status (April 2026)
+
+After reviewing the actual codebase, here is how the design discussed above materialized.
+
+### Tags
+
+The conversation discussed three relationship primitives: `is`, `has`, and `belongs`. In the current implementation:
+
+| Discussed | Implemented | Notes |
+|---|---|---|
+| `is` | `is` | Unchanged. Declares identity or type. |
+| `has` | `has` | Unchanged. Declares properties/attributes. |
+| `belongs` | `part` | Renamed. Expresses loose affiliation (anti-God-object). |
+| `alias` | removed | Replaced by `is` with a type reference. An alias *is* the thing it abbreviates. |
+
+### `is` Tag Forms
+
+```yaml
+# Simple string identity
+- is: universe
+
+# Typed identity (references another fact)
+- is:
+    type: astronomy/star
+
+# Typed identity with value
+- is:
+    type: str
+    value: astronomical object
+
+# Typed identity with property overrides via "as"
+- is:
+    type: astronomy/star
+    as:
+      - astronomy/object:
+          mass:
+            value: 1.989e30
+```
+
+### `has` Tag Forms
+
+```yaml
+# Shorthand — plain string value, type deduced
+- has:
+    description: "connects accelerators"
+
+# Explicit — type declared
+- has:
+    mass:
+      type: num
+
+# Explicit — type and value
+- has:
+    subject:
+      type: str
+      value: "PSP Arch Specification"
+
+# Type referencing another fact
+- has:
+    switch:
+      type: computer/com/ualink/switch
+```
+
+### `part` Tag
+
+```yaml
+# Loose affiliation — this fact belongs to a container
+- part: astronomy/universe
+```
+
+### Value Primitives
+
+- `str` — string
+- `num` — number
+- `list` — list (YAML native)
+
+### Fact File Structure
+
+Each fact is a YAML file containing an array of tags:
+
+```yaml
+- is:
+    type: str
+    value: astronomical object
+- part: astronomy/universe
+- has:
+    mass:
+      type: num
+```
+
+### File Path as Ontology
+
+The directory structure encodes taxonomy: `math/number/integer/increment.yaml` implies `increment` is under `integer`, under `number`, under `math`. The path is also the fact's identity and how it is referenced by other facts.
+
+### Checker
+
+The checker (`pysrc/check.py`) currently validates:
+- YAML structure against `schema.yaml` (JSON Schema)
+- Referential integrity for `is` type references (the referenced fact file must exist)
+- Referential integrity for `part` references
+- `has` type references are **not yet validated** — stored as strings but not resolved

@@ -7,6 +7,7 @@
         to communicate using a 10-bit Identifier. The 10-bit Source and Destination
         Accelerator Identifiers are used by the Switch to route
         Requests and Responses between a sender and a receiver.
+- has:
     size_bits:
       type: num
       value: 10

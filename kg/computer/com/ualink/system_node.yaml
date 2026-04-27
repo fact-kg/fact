@@ -3,9 +3,12 @@
     spec_url:
       type: str
       value: "https://ualinkconsortium.org/wp-content/uploads/2025/04/UALink200_Specification_v1.0_Evaluation_Copy.pdf"
+- has:
     host:
       type: computer/com/ualink/host
+- has:
     acc:
       type: computer/ai/accelerator
+- has:
     host_acc_interconnect:
       type: computer/com/ualink/host_acc_interconnect
