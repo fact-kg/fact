@@ -103,7 +103,7 @@ class Fact:
 
         return 0
 
-    def parse_construct_tag_is_as_type(self, as_type: dict) -> (int, str, dict):
+    def parse_construct_tag_is_as_type(self, as_type: dict) -> tuple[int, str, dict]:
         print(f"as type {as_type}")
         err = 0
         as_type_val = {}
