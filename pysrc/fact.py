@@ -203,6 +203,8 @@ class Fact:
         if isinstance(info[attr_name], dict) and "type" in info[attr_name]:
             attr_type = info[attr_name]["type"]
             attr["type"] = attr_type
+            if "value" in info[attr_name]:
+                attr["val"] = info[attr_name]["value"]
             if attr_type not in ("str", "num", "list"):
                 if self.kg.load(attr_type) != 0:
                     print(f"ERROR: has attr '{attr_name}' references unknown type '{attr_type}'")
