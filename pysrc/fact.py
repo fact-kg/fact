@@ -207,6 +207,14 @@ class Fact:
                 if self.kg.load(attr_type) != 0:
                     print(f"ERROR: has attr '{attr_name}' references unknown type '{attr_type}'")
                     return 1
+            if "as" in info[attr_name]:
+                attr["val_as"] = {}
+                for as_type in info[attr_name]["as"]:
+                    err, type_name, as_type_val = self.parse_construct_tag_is_as_type(as_type)
+                    if err != 0:
+                        print(f"ERROR: can't parse 'as' in has attr '{attr_name}'")
+                        return 1
+                    attr["val_as"][type_name] = as_type_val
         else:
             match info[attr_name]:
                 case str():
