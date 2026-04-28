@@ -1,0 +1,5 @@
+- is: semantic tag
+- has:
+    description: |
+      A tag is a key in a fact's YAML array that declares a relationship.
+      Tags are classified as strong (symbolic ground truth) or weak (loose).

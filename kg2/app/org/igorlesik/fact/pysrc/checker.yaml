@@ -1,0 +1,10 @@
+- is: CLI tool
+- has:
+    description: |
+      Command-line entry point for checking facts.
+      Validates schema, referential integrity, and fact construction.
+      Supports --all to check all facts and --roots for multiple root directories.
+- has:
+    source_file:
+      type: str
+      value: pysrc/check.py

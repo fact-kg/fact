@@ -1,0 +1,10 @@
+- is: Python module
+- has:
+    description: |
+      Loads YAML fact files from multiple root directories into memory.
+      Validates each fact against JSON Schema.
+      Detects duplicate facts across roots.
+- has:
+    source_file:
+      type: str
+      value: pysrc/kg.py

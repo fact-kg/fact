@@ -1,0 +1,11 @@
+- is:
+    type: app/org/igorlesik/fact/kg/yaml/tag
+- has:
+    description: |
+      Declares a property or attribute. Strong tag (symbolic ground truth).
+      Each has entry contains exactly one attribute.
+      Attribute can be a typed reference, explicit type with value, or shorthand.
+- has:
+    strength:
+      type: str
+      value: strong

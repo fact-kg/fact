@@ -1,0 +1,6 @@
+# TODO: make "- is: txt_data_file_format" when that fact exists
+- is: fact file format
+- has:
+    description: |
+      Facts are stored as YAML files. Each file is an array of tags.
+      Tags are: is, has, part.

@@ -1,0 +1,14 @@
+- is: knowledge representation application
+- has:
+    description:
+      type: str
+      value: |
+        YAML-based knowledge graph system where facts are written as YAML files
+        with semantic tags. Designed to be human-readable, LLM-native, and
+        schema-light. Uses file path as ontology and taxonomy.
+- has:
+    kg:
+      type: app/org/igorlesik/fact/kg
+- has:
+    pysrc:
+      type: app/org/igorlesik/fact/pysrc

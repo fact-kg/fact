@@ -1,0 +1,9 @@
+- is: knowledge graph
+- has:
+    description: |
+      Collection of facts stored as YAML files in root directories.
+      Multiple roots merge into one unified namespace.
+      File path encodes taxonomy and serves as fact identity.
+- has:
+    fact_format:
+      type: app/org/igorlesik/fact/kg/yaml

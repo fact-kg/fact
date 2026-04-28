@@ -1,0 +1,11 @@
+- is:
+    type: app/org/igorlesik/fact/kg/yaml/tag
+- has:
+    description: |
+      Declares identity or type. Strong tag (symbolic ground truth).
+      Forms: simple string ("- is: universe"), typed reference
+      ("- is: { type: astronomy/star }"), or typed with value and as-overrides.
+- has:
+    strength:
+      type: str
+      value: strong

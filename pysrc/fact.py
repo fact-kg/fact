@@ -200,7 +200,7 @@ class Fact:
         attr_name = next(iter(info))
         attr = {}
 
-        if "type" in info[attr_name]:
+        if isinstance(info[attr_name], dict) and "type" in info[attr_name]:
             attr_type = info[attr_name]["type"]
             attr["type"] = attr_type
             if attr_type not in ("str", "num", "list"):

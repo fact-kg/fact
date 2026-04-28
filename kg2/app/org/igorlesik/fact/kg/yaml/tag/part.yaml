@@ -1,0 +1,11 @@
+- is:
+    type: app/org/igorlesik/fact/kg/yaml/tag
+- has:
+    description: |
+      Declares loose affiliation to a container or domain.
+      Weak tag. Used to prevent God objects.
+      Renamed from "belongs" in earlier design.
+- has:
+    strength:
+      type: str
+      value: weak

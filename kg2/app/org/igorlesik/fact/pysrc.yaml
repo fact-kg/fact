@@ -1,0 +1,14 @@
+- is: Python implementation
+- has:
+    description: |
+      Python source code for the fact checker tool.
+      Located in pysrc/ directory.
+- has:
+    checker:
+      type: app/org/igorlesik/fact/pysrc/checker
+- has:
+    kg_module:
+      type: app/org/igorlesik/fact/pysrc/kg_module
+- has:
+    entity:
+      type: app/org/igorlesik/fact/pysrc/entity
