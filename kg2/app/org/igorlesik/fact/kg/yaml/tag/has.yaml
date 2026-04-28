@@ -5,6 +5,8 @@
       Declares a property or attribute. Strong tag (symbolic ground truth).
       Each has entry contains exactly one attribute.
       Attribute can be a typed reference, explicit type with value, or shorthand.
+      Supports "as" to set property values on the declared type,
+      symmetric with the "as" mechanism in the "is" tag.
 - has:
     strength:
       type: str

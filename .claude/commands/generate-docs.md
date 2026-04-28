@@ -18,7 +18,7 @@ document (e.g. via pandoc), so:
 - Do NOT repeat the project title in files other than `00_title.md`
 - Sections must flow naturally when concatenated in filename order
 - Use `##` for top-level sections (the `#` title is only in `00_title.md`)
-- Do not add table of contents — it will be generated later
+- Table of contents is in `01_toc.md` — update it if sections change
 - Use LF line endings, not CRLF
 
 ## Files to generate
@@ -26,11 +26,12 @@ document (e.g. via pandoc), so:
 Each file is generated from scratch by reading the listed facts:
 
 - `00_title.md` — title page with generation date
-- `01_overview.md` — from `app/org/igorlesik/fact.yaml`
-- `02_knowledge_graph.md` — from `app/org/igorlesik/fact/kg.yaml` and `kg/yaml.yaml`
-- `03_tags.md` — from `app/org/igorlesik/fact/kg/yaml/tag.yaml` and `tag/is.yaml`, `tag/has.yaml`, `tag/part.yaml`
-- `04_implementation.md` — from `app/org/igorlesik/fact/pysrc.yaml` and `pysrc/checker.yaml`, `pysrc/kg_module.yaml`, `pysrc/entity.yaml`
-- `05_usage.md` — from `app/org/igorlesik/fact/pysrc/checker.yaml`, include CLI arguments and examples
+- `01_toc.md` — table of contents, update if sections change
+- `02_overview.md` — from `app/org/igorlesik/fact.yaml`
+- `03_knowledge_graph.md` — from `app/org/igorlesik/fact/kg.yaml` and `kg/yaml.yaml`
+- `04_tags.md` — from `app/org/igorlesik/fact/kg/yaml/tag.yaml` and `tag/is.yaml`, `tag/has.yaml`, `tag/part.yaml`
+- `05_implementation.md` — from `app/org/igorlesik/fact/pysrc.yaml` and `pysrc/checker.yaml`, `pysrc/kg_module.yaml`, `pysrc/entity.yaml`
+- `06_usage.md` — from `app/org/igorlesik/fact/pysrc/checker.yaml`, include CLI arguments and examples
 
 ## Process
 
@@ -38,3 +39,4 @@ Each file is generated from scratch by reading the listed facts:
 2. Generate each markdown file from scratch based on the corresponding facts
 3. Overwrite existing files in `docs/generated/`
 4. Run `python.exe pysrc/check.py --roots kg,kg2 --all` to verify facts are valid before generating
+5. Generate `docs/generated/README.md` by concatenating all numbered files in order, with a blank line between each file

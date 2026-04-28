@@ -32,7 +32,8 @@ The `is` tag has several forms:
 
 Declares a property or attribute. Strong tag (symbolic ground truth). Each `has`
 entry contains exactly one attribute. Attribute can be a typed reference,
-explicit type with value, or shorthand.
+explicit type with value, or shorthand. Supports `as` to set property values on
+the declared type, symmetric with the `as` mechanism in the `is` tag.
 
 Examples:
 
@@ -56,6 +57,15 @@ Examples:
 - has:
     switch:
       type: computer/com/ualink/switch
+
+# Type with property overrides via as
+- has:
+    method_load:
+      type: computer/sw/lang/python/class_method
+      as:
+        - computer/sw/lang/python/class_method:
+            name:
+              value: load
 ```
 
 ### part
