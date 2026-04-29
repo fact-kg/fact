@@ -1,5 +1,8 @@
+import logging
 from kg import KgIface
 from typing import Dict
+
+log = logging.getLogger(__name__)
 
 class Fact:
     """Element of knowledge"""
@@ -12,7 +15,7 @@ class Fact:
         """Construct fact, create fields"""
 
         if self.name not in self.kg.get_dict():
-            print(f"ERROR: can not find {self.name} in KG")
+            log.error("can not find %s in KG", self.name)
             return 1
 
         self.data = self.kg.get_fact(self.name)
@@ -31,7 +34,7 @@ class Fact:
         if result != 0:
             return result
 
-        print(f"{self.name} constructed: {self.data['info']}")
+        log.info("%s constructed: %s", self.name, self.data['info'])
 
         return 0
 
@@ -42,8 +45,8 @@ class Fact:
         self.data["info"]["val_as"] = {}
 
         for tag in self.data["def"]:
-            if "is" in tag.keys():
-                print(f"is tag: {tag}")
+            if "is" in tag:
+                log.debug("is tag: %s", tag)
                 if 0 != self.construct_tag_is(tag):
                     return 1
 
@@ -53,7 +56,7 @@ class Fact:
         """Construct what fact is"""
 
         data = tag["is"]
-        print(f"is data: {data}")
+        log.debug("is data: %s", data)
 
         fact_types = self.data["info"]["type"]
 
@@ -61,13 +64,13 @@ class Fact:
 
         match data:
             case str():
-                print("fact is 'str' type")
+                log.debug("fact is 'str' type")
                 fact_types.append("str")
             case dict():
-                print("fact is 'dict' type")
+                log.debug("fact is 'dict' type")
                 ret_status = self.parse_construct_tag_is_dict(data)
             case _:
-                print(f"ERROR: unknown type of {data}")
+                log.error("unknown type of %s", data)
                 return 1
 
         return ret_status
@@ -76,7 +79,7 @@ class Fact:
         """Construct phase parse is dict"""
 
         if "type" not in info:
-            print(f"ERROR: no 'type' in {info}")
+            log.error("no 'type' in %s", info)
             return 1
 
         fact_types = self.data["info"]["type"]
@@ -89,7 +92,7 @@ class Fact:
                 fact_types.append("num")
             case _:
                 if self.kg.load(info_type) != 0:
-                    print(f"ERROR: can't load fact '{info_type}'")
+                    log.error("can't load fact '%s'", info_type)
                     return 2
                 fact_types.append(info_type)
 
@@ -97,14 +100,14 @@ class Fact:
             for as_type in info["as"]:
                 err, type_name, as_type_val = self.parse_construct_tag_is_as_type(as_type)
                 if err != 0:
-                    print(f"ERROR: can't parse '{as_type}'")
+                    log.error("can't parse '%s'", as_type)
                     return 3
                 self.data["info"]["val_as"][type_name] = as_type_val
 
         return 0
 
     def parse_construct_tag_is_as_type(self, as_type: dict) -> tuple[int, str, dict]:
-        print(f"as type {as_type}")
+        log.debug("as type %s", as_type)
         err = 0
         as_type_val = {}
         type_name = next(iter(as_type))
@@ -121,8 +124,8 @@ class Fact:
         self.data["info"]["part"] = []
 
         for tag in self.data["def"]:
-            if "part" in tag.keys():
-                print(f"part tag: {tag}")
+            if "part" in tag:
+                log.debug("part tag: %s", tag)
                 if 0 != self.construct_tag_part(tag):
                     return 1
 
@@ -132,7 +135,7 @@ class Fact:
         """Construct what fact belongs to"""
 
         data = tag["part"]
-        print(f"part data: {data}")
+        log.debug("part data: %s", data)
 
         fact_owners = self.data["info"]["part"]
 
@@ -140,16 +143,16 @@ class Fact:
 
         match data:
             case str():
-                print(f"fact belongs to '{data}'")
+                log.debug("fact belongs to '%s'", data)
                 if self.kg.load(data) != 0:
-                    print(f"ERROR: can't load fact '{data}'")
+                    log.error("can't load fact '%s'", data)
                     return 2
                 fact_owners.append(data)
             #case dict():
-            #    print("fact is 'dict' type")
+            #    log.debug("fact is 'dict' type")
             #    ret_status = self.parse_construct_tag_is_dict(data)
             case _:
-                print(f"ERROR: unknown type of {data}")
+                log.error("unknown type of %s", data)
                 return 1
 
         return ret_status
@@ -160,8 +163,8 @@ class Fact:
         self.data["info"]["has"] = {}
 
         for tag in self.data["def"]:
-            if "has" in tag.keys():
-                print(f"has tag: {tag}")
+            if "has" in tag:
+                log.debug("has tag: %s", tag)
                 if 0 != self.construct_tag_has(tag):
                     return 1
 
@@ -171,7 +174,7 @@ class Fact:
         """Construct what fact has"""
 
         data = tag["has"]
-        print(f"has data: {data}")
+        log.debug("has data: %s", data)
 
         fact_has = self.data["info"]["has"]
 
@@ -179,17 +182,13 @@ class Fact:
 
         match data:
             case str():
-                print(f"fact has '{data}'")
-                #if self.kg.load(data) != 0:
-                #    print(f"ERROR: can't load fact '{data}'")
-                #    return 2
-                #fact_has.append(data)
+                log.debug("fact has '%s'", data)
                 return 1  # TODO: handle 'has' with bare string value (no dict)
             case dict():
-                print("'has' tag data type is 'dict'")
+                log.debug("'has' tag data type is 'dict'")
                 ret_status = self.parse_construct_tag_has_dict(data)
             case _:
-                print(f"ERROR: unknown type of {data}")
+                log.error("unknown type of %s", data)
                 return 1
 
         return ret_status
@@ -207,14 +206,14 @@ class Fact:
                 attr["val"] = info[attr_name]["value"]
             if attr_type not in ("str", "num", "list"):
                 if self.kg.load(attr_type) != 0:
-                    print(f"ERROR: has attr '{attr_name}' references unknown type '{attr_type}'")
+                    log.error("has attr '%s' references unknown type '%s'", attr_name, attr_type)
                     return 1
             if "as" in info[attr_name]:
                 attr["val_as"] = {}
                 for as_type in info[attr_name]["as"]:
                     err, type_name, as_type_val = self.parse_construct_tag_is_as_type(as_type)
                     if err != 0:
-                        print(f"ERROR: can't parse 'as' in has attr '{attr_name}'")
+                        log.error("can't parse 'as' in has attr '%s'", attr_name)
                         return 1
                     attr["val_as"][type_name] = as_type_val
         else:
@@ -226,12 +225,12 @@ class Fact:
                     attr["type"] = "num"
                     attr["val"] = info[attr_name]
                 case _:
-                    print(f"ERROR: unknown type {info[attr_name]}")
+                    log.error("unknown type %s", info[attr_name])
                     return 1
 
         fact_has = self.data["info"]["has"]
         if attr_name in fact_has:
-            print(f"ERROR: already exists attr {attr_name}")
+            log.error("already exists attr %s", attr_name)
             return 1
         fact_has[attr_name] = attr
 

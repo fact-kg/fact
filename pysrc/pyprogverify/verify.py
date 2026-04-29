@@ -2,6 +2,7 @@
 
 import sys
 import ast
+import logging
 import argparse
 from pathlib import Path
 
@@ -46,34 +47,25 @@ def find_class_info_in_fact(kg, fact_name):
 
     return source_file, class_name, methods, parent_classes
 
-def find_class_methods_in_source(source_path, class_name):
-    """Parse Python source and extract method names from a class using AST."""
+def find_class_in_source(source_path, class_name):
+    """Parse Python source and extract methods and base classes in one pass."""
     source = source_path.read_text(encoding="utf-8")
     tree = ast.parse(source)
 
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef) and node.name == class_name:
-            return [
+            methods = [
                 n.name for n in node.body
                 if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
                 and not n.name.startswith('_')
             ]
-
-    return None
-
-def find_class_bases_in_source(source_path, class_name):
-    """Parse Python source and extract base class names from a class using AST."""
-    source = source_path.read_text(encoding="utf-8")
-    tree = ast.parse(source)
-
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ClassDef) and node.name == class_name:
-            return [
+            bases = [
                 base.id for base in node.bases
                 if isinstance(base, ast.Name)
             ]
+            return methods, bases
 
-    return None
+    return None, None
 
 def find_module_facts(kg, program_fact_name):
     """Follow has references from a program fact to find verifiable modules."""
@@ -83,12 +75,16 @@ def find_module_facts(kg, program_fact_name):
     for attr_name, attr in has.items():
         attr_type = attr.get("type", "")
         if attr_type and attr_type not in ("str", "num", "list"):
-            if kg.load(attr_type) != 0:
-                continue
-            fact = Fact(kg, attr_type)
-            if fact.construct() != 0:
-                continue
-            module_has = kg.get_fact(attr_type).get("info", {}).get("has", {})
+            fact_data = kg.get_fact(attr_type) if kg.is_loaded(attr_type) else None
+            if fact_data is None:
+                if kg.load(attr_type) != 0:
+                    continue
+                fact_data = kg.get_fact(attr_type)
+            if "info" not in fact_data:
+                fact = Fact(kg, attr_type)
+                if fact.construct() != 0:
+                    continue
+            module_has = fact_data.get("info", {}).get("has", {})
             has_class = "class_name" in module_has
             has_methods = any(
                 v.get("type") == "computer/sw/lang/python/class_method"
@@ -116,13 +112,15 @@ def verify_module(kg, fact_name, src_root, results):
 
     console.print(f"\n[bold]Verifying {class_name}[/bold] in {source_file}")
 
+    actual_methods, actual_bases = find_class_in_source(source_path, class_name)
+
+    if actual_methods is None:
+        console.print(f"  [red]ERROR:[/red] class '{class_name}' not found in {source_file}")
+        return 1
+
     errors = 0
 
     if fact_parents:
-        actual_bases = find_class_bases_in_source(source_path, class_name)
-        if actual_bases is None:
-            console.print(f"  [red]ERROR:[/red] class '{class_name}' not found in {source_file}")
-            return 1
         for p in fact_parents:
             if p not in actual_bases:
                 console.print(f"  [red]FAIL[/red]  parent class '{p}'")
@@ -131,12 +129,6 @@ def verify_module(kg, fact_name, src_root, results):
             else:
                 console.print(f"  [green]OK[/green]    parent class '{p}'")
                 results.append(("parent", class_name, p, "OK"))
-
-    actual_methods = find_class_methods_in_source(source_path, class_name)
-
-    if actual_methods is None:
-        console.print(f"  [red]ERROR:[/red] class '{class_name}' not found in {source_file}")
-        return 1
 
     for m in fact_methods:
         if m not in actual_methods:
@@ -187,7 +179,16 @@ def main():
         help="Comma-separated list of root directories (default: kg)")
     parser.add_argument("--src-root", default=".",
         help="Root directory for resolving source_file paths (default: .)")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Show info messages")
+    parser.add_argument("--debug", action="store_true", help="Show all debug messages")
     args = parser.parse_args()
+
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
+    elif args.verbose:
+        logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+    else:
+        logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
 
     project_dir = Path(__file__).resolve().parent.parent.parent
     roots = [project_dir / r.strip() for r in args.roots.split(',')]

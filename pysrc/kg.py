@@ -1,8 +1,11 @@
+import logging
 import yaml
 import jsonschema
 from pathlib import Path
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List
+
+log = logging.getLogger(__name__)
 
 class KgIface(ABC):
     @abstractmethod
@@ -49,12 +52,12 @@ class Kg(KgIface):
             if path.exists():
                 found.append(path)
         if len(found) > 1:
-            print(f"ERROR: fact '{fact_name}' exists in multiple roots:")
+            log.error("fact '%s' exists in multiple roots:", fact_name)
             for p in found:
-                print(f"  {p}")
+                log.error("  %s", p)
             return None
         if len(found) == 0:
-            print(f"ERROR: fact '{fact_name}' not found in any root")
+            log.error("fact '%s' not found in any root", fact_name)
             return None
         return found[0]
 
@@ -75,9 +78,9 @@ class Kg(KgIface):
     def validate_schema(self, yaml_data: str) -> bool:
         try:
             jsonschema.validate(instance=yaml_data, schema=self.schema)
-            print("valid schema")
+            log.debug("valid schema")
         except jsonschema.ValidationError as e:
-            print(f"ERROR: invalid schema: {e.message}")
-            print(f"  at path: {list(e.absolute_path)}")
+            log.error("invalid schema: %s", e.message)
+            log.error("  at path: %s", list(e.absolute_path))
             return False
         return True

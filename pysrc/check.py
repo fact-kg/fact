@@ -1,34 +1,53 @@
 #!/usr/bin/env python3
 
+import logging
 import yaml
 import argparse
 from pathlib import Path
 
+from rich.console import Console
 from kg import Kg
 from fact import Fact
 
 def check_one(kg, fact_name):
     """Check a single fact. Returns 0 on success."""
     if 0 != kg.load(fact_name):
-        print(f"ERROR: could not load '{fact_name}'")
+        logging.error("could not load '%s'", fact_name)
         return 1
     fact = Fact(kg, fact_name)
     if 0 != fact.construct():
-        print(f"ERROR: can not construct '{fact_name}'")
+        logging.error("can not construct '%s'", fact_name)
         return 2
     return 0
 
-def check_all(kg, roots):
+def check_all(kg, roots, use_progress=False):
     """Check all facts across all roots. Returns 0 if all pass."""
     failed = []
     passed = 0
-    for root in roots:
-        for yaml_file in sorted(root.rglob("*.yaml")):
-            fact_name = str(yaml_file.relative_to(root).with_suffix('')).replace('\\', '/')
-            if 0 != check_one(kg, fact_name):
-                failed.append(fact_name)
-            else:
-                passed += 1
+    checked = 0
+
+    if use_progress:
+        console = Console()
+        status = console.status("Checking facts...")
+        with status:
+            for root in roots:
+                for yaml_file in root.rglob("*.yaml"):
+                    fact_name = str(yaml_file.relative_to(root).with_suffix('')).replace('\\', '/')
+                    checked += 1
+                    status.update(f"Checking facts... {checked}")
+                    if 0 != check_one(kg, fact_name):
+                        failed.append(fact_name)
+                    else:
+                        passed += 1
+    else:
+        for root in roots:
+            for yaml_file in root.rglob("*.yaml"):
+                fact_name = str(yaml_file.relative_to(root).with_suffix('')).replace('\\', '/')
+                if 0 != check_one(kg, fact_name):
+                    failed.append(fact_name)
+                else:
+                    passed += 1
+
     print(f"\n{passed + len(failed)} checked, {passed} passed, {len(failed)} failed")
     if failed:
         for f in failed:
@@ -45,7 +64,16 @@ def main():
     parser.add_argument("--all", action="store_true", help="Check all facts in kg directory")
     parser.add_argument("--roots", default="kg",
         help="Comma-separated list of root directories (default: kg)")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Show info messages")
+    parser.add_argument("--debug", action="store_true", help="Show all debug messages")
     args = parser.parse_args()
+
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
+    elif args.verbose:
+        logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+    else:
+        logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
 
     if not args.all and not args.name:
         parser.error("either provide a fact name or use --all")
@@ -69,7 +97,8 @@ def main():
     kg = Kg(roots, schema)
 
     if args.all:
-        return check_all(kg, roots)
+        use_progress = not args.verbose and not args.debug
+        return check_all(kg, roots, use_progress)
 
     fact_name = args.name
     print(f"Checking fact '{fact_name}'")
