@@ -30,6 +30,7 @@ class Kg(KgIface):
         """Constructor method to initialize instance attributes."""
         self.roots = roots
         self.schema = schema
+        self.validator = jsonschema.Draft202012Validator(schema)
         self.data : Dict[str, Any] = {}
 
     def get_dict(self) -> Dict[str, Any]:
@@ -77,7 +78,7 @@ class Kg(KgIface):
 
     def validate_schema(self, yaml_data: str) -> bool:
         try:
-            jsonschema.validate(instance=yaml_data, schema=self.schema)
+            self.validator.validate(yaml_data)
             log.debug("valid schema")
         except jsonschema.ValidationError as e:
             log.error("invalid schema: %s", e.message)
