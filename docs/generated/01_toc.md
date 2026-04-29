@@ -10,5 +10,6 @@
 - [Python Implementation](#python-implementation)
   - [Checker](#checker)
   - [Knowledge Graph Module](#knowledge-graph-module)
-  - [Fact Entity](#fact-entity)
+  - [Fact Module](#fact-module)
+  - [Source Verifier](#source-verifier)
 - [Usage](#usage)

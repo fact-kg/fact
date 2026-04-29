@@ -1,6 +1,6 @@
 # Fact — Knowledge Representation System
 
-**Generated from facts on: 2026-04-28**
+**Generated from facts on: 2026-04-29**
 
 ## Table of Contents
 
@@ -14,7 +14,8 @@
 - [Python Implementation](#python-implementation)
   - [Checker](#checker)
   - [Knowledge Graph Module](#knowledge-graph-module)
-  - [Fact Entity](#fact-entity)
+  - [Fact Module](#fact-module)
+  - [Source Verifier](#source-verifier)
 - [Usage](#usage)
 
 ## Overview
@@ -151,7 +152,7 @@ Renamed from `belongs` in earlier design.
 ## Python Implementation
 
 The Python source code for the fact checker tool is located in the `pysrc/`
-directory. It consists of three modules.
+directory. It consists of three modules and a source verifier.
 
 ### Checker
 
@@ -165,7 +166,8 @@ The knowledge graph module (`pysrc/kg.py`) loads YAML fact files from multiple
 root directories into memory. It validates each fact against the JSON Schema
 defined in `schema.yaml` and detects duplicate facts across roots.
 
-The module provides the `Kg` class with the following methods:
+The module provides the `Kg` class (inherits from `KgIface`) with the following
+methods:
 
 - `load` — load a fact from file into memory
 - `find_fact_file` — find a fact file across all roots
@@ -174,35 +176,50 @@ The module provides the `Kg` class with the following methods:
 - `get_fact` — get a loaded fact's data
 - `get_dict` — get the entire loaded fact dictionary
 
-### Fact Entity
+### Fact Module
 
-The fact entity module (`pysrc/fact.py`) constructs a fact by parsing its `is`,
+The fact module (`pysrc/fact.py`) constructs a fact by parsing its `is`,
 `has`, and `part` tags. It validates type references and builds the fact's
 internal representation.
 
+The module provides the `Fact` class with the following methods:
+
+- `construct` — construct fact, create fields
+- `construct_what_it_is` — process `is` tags
+- `construct_tag_is` — construct what a fact is
+- `parse_construct_tag_is_dict` — parse `is` dict form
+- `parse_construct_tag_is_as_type` — parse `as` property overrides
+- `construct_what_it_part` — process `part` tags
+- `construct_tag_part` — construct what a fact belongs to
+- `construct_what_it_has` — process `has` tags
+- `construct_tag_has` — construct what a fact has
+- `parse_construct_tag_has_dict` — parse `has` dict form
+
+### Source Verifier
+
+The source verifier (`pysrc/pyprogverify/verify.py`) validates Python source
+code against facts using AST analysis. It checks that classes, methods, parent
+classes, and `@fact` decorator links declared in facts match the actual source
+code. No runtime import of the target code is performed.
+
 ## Usage
+
+### Checking facts
 
 The checker is a command-line tool for validating facts.
 
-### Check a single fact
-
 ```bash
+# Check a single fact
 python.exe pysrc/check.py math/function
-```
 
-### Check all facts in the default root
-
-```bash
+# Check all facts in the default root
 python.exe pysrc/check.py --all
-```
 
-### Check all facts across multiple roots
-
-```bash
+# Check all facts across multiple roots
 python.exe pysrc/check.py --roots kg,kg2 --all
 ```
 
-### Exit codes
+Exit codes:
 
 | Code | Meaning |
 |------|---------|
@@ -210,3 +227,21 @@ python.exe pysrc/check.py --roots kg,kg2 --all
 | 1 | File or load error |
 | 2 | Schema validation error |
 | 3 | Fact construction error |
+
+### Verifying source code against facts
+
+The verifier checks that Python source code matches its fact descriptions.
+
+```bash
+# Verify all modules of a program
+python.exe pysrc/pyprogverify/verify.py --roots=kg,kg2 --src-root=. app/org/igorlesik/fact/pysrc
+
+# Verify a single module
+python.exe pysrc/pyprogverify/verify.py --roots=kg,kg2 --src-root=. app/org/igorlesik/fact/pysrc/kg_module
+```
+
+The verifier checks:
+- Class existence and name
+- Parent class (inheritance) matches
+- Public method names match
+- `@fact` decorator bidirectional link

@@ -108,3 +108,137 @@ in terms of facts, under the path `app/org/igorlesik/fact/`.
 | `has` | Compositional — declares properties | Active, strong (symbolic) |
 | `part` | Loose affiliation (renamed from `belongs`) | Active, weak |
 | `alias` | Was used for abbreviations | **Removed**, replaced by `is` |
+
+---
+
+# Session Notes — April 27-28, 2026
+
+## Work Done
+
+### 1. Multi-root support implemented
+
+- `kg.py`: `Kg` now accepts `List[Path]` of roots instead of single path.
+- New `find_fact_file()` searches across all roots, detects duplicates.
+- `check.py`: added `--roots` flag (default: `kg`), validates root dirs exist.
+
+### 2. Self-description facts created (kg2)
+
+Created `kg2/app/org/igorlesik/fact/` with 11 fact files describing the
+application, KG concept, YAML format, tags, and Python modules:
+
+- `fact.yaml` — the application
+- `fact/kg.yaml` — knowledge graph concept
+- `fact/kg/yaml.yaml` — YAML fact format
+- `fact/kg/yaml/tag.yaml` — base tag concept
+- `fact/kg/yaml/tag/is.yaml`, `has.yaml`, `part.yaml` — individual tags
+- `fact/pysrc.yaml` — Python implementation
+- `fact/pysrc/checker.yaml` — check.py
+- `fact/pysrc/kg_module.yaml` — kg.py (Kg class)
+- `fact/pysrc/fact_module.yaml` — fact.py (Fact class)
+
+### 3. `has` tag now supports `as` (symmetric with `is`)
+
+Property overrides via `as` now work in `has` entries, same syntax as `is`.
+Updated schema.yaml and fact.py. Example:
+
+```yaml
+- has:
+    method_load:
+      type: computer/sw/lang/python/class_method
+      as:
+        - computer/sw/lang/python/class_method:
+            name:
+              value: load
+```
+
+### 4. Python source verification tool (pyprogverify)
+
+Created `pysrc/pyprogverify/verify.py` — verifies Python source code against
+facts using AST (no runtime import of target code).
+
+Currently checks:
+- Class existence and name
+- Parent class (inheritance) matches
+- Public method names match
+- `@fact` decorator bidirectional link
+
+Usage:
+```bash
+python.exe pysrc/pyprogverify/verify.py --roots=kg,kg2 --src-root=. app/org/igorlesik/fact/pysrc
+```
+
+### 5. `@fact` decorator for bidirectional code-to-fact linking
+
+Created `pysrc/fact_decorator.py` — a zero-cost-at-runtime decorator that marks
+code elements with their fact path:
+
+```python
+from fact_decorator import fact
+
+@fact("app/org/igorlesik/fact/pysrc/kg_module")
+class Kg(KgIface):
+```
+
+The verifier checks both directions: fact points to code (via `source_file`,
+`class_name`), code points to fact (via `@fact` decorator).
+
+### 6. Logging replaces print noise
+
+Replaced all diagnostic `print()` with `logging` in kg.py, fact.py, check.py.
+- `print()` — program output (results, summaries)
+- `logging` — diagnostics (debug, info, errors) to stderr
+- Added `--verbose` and `--debug` flags to check.py and verify.py
+
+### 7. Performance improvements
+
+- Schema compiled once via `jsonschema.Draft202012Validator` instead of
+  recompiling on every `validate()` call. **3.6x speedup** (58ms → 16ms per fact).
+- Removed unnecessary `sorted()` on `rglob()` — was forcing full path collection.
+- Merged two AST parse passes into one in verifier.
+- Added `rich` spinner to check.py for progress indication.
+
+### 8. Generated documentation
+
+Created `docs/generated/` with numbered markdown files generated from facts:
+`00_title.md` through `06_usage.md` plus `README.md` (merged).
+Skill `.claude/commands/generate-docs.md` drives regeneration.
+
+### 9. Bug fixes
+
+- `parse_construct_tag_has_dict`: `"type" in string` matched as substring;
+  fixed with `isinstance(info[attr_name], dict)` guard.
+- `has` value was dropped when explicit `type` + `value` form used; fixed.
+- `tag.keys()` → `tag` (4 occurrences) — idiomatic and marginally faster.
+
+---
+
+## Design Decisions
+
+### `has` and `is` symmetry for `as`
+
+**Decision:** The `as` mechanism for setting property values works identically
+in both `is` and `has` tags. Full verbose syntax required (not shortened) to
+support multiple inheritance cases.
+
+### General knowledge vs project-specific knowledge
+
+- `kg/computer/sw/lang/python/class_method.yaml` — general Python concept
+- `kg/computer/sw/lang/python/class.yaml` — general Python concept
+- `kg2/app/org/igorlesik/fact/pysrc/kg_module.yaml` — project-specific
+
+General language concepts go in `kg`, project descriptions go in `kg2`.
+
+### Fact-driven development direction
+
+Explored how facts can drive code, not just describe it. Current state:
+- Facts describe structure (classes, methods, inheritance) — verifiable via AST
+- Behavioral facts (what code *does*) — not yet, needs `function` concept
+- `@fact` decorator provides bidirectional link between facts and code
+- EARS patterns evaluated, parked for later (docs/to_do_thinking.md)
+
+### Verify tool architecture
+
+- Takes a program fact path, follows `has` references to find modules
+- Each module with `class_name` + `class_method` attributes is verifiable
+- Uses AST (static analysis), never imports target code
+- `--src-root` parameter for generic use with any project
