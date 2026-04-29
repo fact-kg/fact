@@ -1,9 +1,0 @@
-- is: Python module
-- has:
-    description: |
-      Constructs a fact by parsing its is, has, and part tags.
-      Validates type references and builds the fact's internal representation.
-- has:
-    source_file:
-      type: str
-      value: pysrc/fact.py

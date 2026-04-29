@@ -1,0 +1,83 @@
+- is: Python module
+- has:
+    description: |
+      Constructs a fact by parsing its is, has, and part tags.
+      Validates type references and builds the fact's internal representation.
+- has:
+    source_file:
+      type: str
+      value: pysrc/fact.py
+- has:
+    class_name:
+      type: str
+      value: Fact
+- has:
+    method_construct:
+      type: computer/sw/lang/python/class_method
+      as:
+        - computer/sw/lang/python/class_method:
+            name:
+              value: construct
+- has:
+    method_construct_what_it_is:
+      type: computer/sw/lang/python/class_method
+      as:
+        - computer/sw/lang/python/class_method:
+            name:
+              value: construct_what_it_is
+- has:
+    method_construct_tag_is:
+      type: computer/sw/lang/python/class_method
+      as:
+        - computer/sw/lang/python/class_method:
+            name:
+              value: construct_tag_is
+- has:
+    method_parse_construct_tag_is_dict:
+      type: computer/sw/lang/python/class_method
+      as:
+        - computer/sw/lang/python/class_method:
+            name:
+              value: parse_construct_tag_is_dict
+- has:
+    method_parse_construct_tag_is_as_type:
+      type: computer/sw/lang/python/class_method
+      as:
+        - computer/sw/lang/python/class_method:
+            name:
+              value: parse_construct_tag_is_as_type
+- has:
+    method_construct_what_it_part:
+      type: computer/sw/lang/python/class_method
+      as:
+        - computer/sw/lang/python/class_method:
+            name:
+              value: construct_what_it_part
+- has:
+    method_construct_tag_part:
+      type: computer/sw/lang/python/class_method
+      as:
+        - computer/sw/lang/python/class_method:
+            name:
+              value: construct_tag_part
+- has:
+    method_construct_what_it_has:
+      type: computer/sw/lang/python/class_method
+      as:
+        - computer/sw/lang/python/class_method:
+            name:
+              value: construct_what_it_has
+- has:
+    method_construct_tag_has:
+      type: computer/sw/lang/python/class_method
+      as:
+        - computer/sw/lang/python/class_method:
+            name:
+              value: construct_tag_has
+- has:
+    method_parse_construct_tag_has_dict:
+      type: computer/sw/lang/python/class_method
+      as:
+        - computer/sw/lang/python/class_method:
+            name:
+              value: parse_construct_tag_has_dict

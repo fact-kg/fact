@@ -10,5 +10,5 @@
     kg_module:
       type: app/org/igorlesik/fact/pysrc/kg_module
 - has:
-    entity:
-      type: app/org/igorlesik/fact/pysrc/entity
+    fact_module:
+      type: app/org/igorlesik/fact/pysrc/fact_module
