@@ -8,7 +8,9 @@ from pathlib import Path
 from rich.console import Console
 from kg import Kg
 from fact import Fact
+from fact_decorator import fact
 
+@fact("app/org/igorlesik/fact/pysrc/checker/check_one")
 def check_one(kg, fact_name):
     """Check a single fact. Returns 0 on success."""
     if 0 != kg.load(fact_name):
@@ -20,6 +22,7 @@ def check_one(kg, fact_name):
         return 2
     return 0
 
+@fact("app/org/igorlesik/fact/pysrc/checker/check_all")
 def check_all(kg, roots, use_progress=False):
     """Check all facts across all roots. Returns 0 if all pass."""
     failed = []
@@ -55,6 +58,7 @@ def check_all(kg, roots, use_progress=False):
         return 1
     return 0
 
+@fact("app/org/igorlesik/fact/pysrc/checker")
 def main():
     """Main entry point."""
 

@@ -1,0 +1,4 @@
+- is: Python function
+- has:
+    name:
+      type: str

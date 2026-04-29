@@ -1,0 +1,13 @@
+- is:
+    type: computer/sw/lang/python/function
+    as:
+      - computer/sw/lang/python/function:
+          name:
+            value: check_one
+- has:
+    description: |
+      Check a single fact. Returns 0 on success.
+- has:
+    source_file:
+      type: str
+      value: pysrc/check.py

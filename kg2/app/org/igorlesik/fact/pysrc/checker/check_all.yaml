@@ -1,0 +1,13 @@
+- is:
+    type: computer/sw/lang/python/function
+    as:
+      - computer/sw/lang/python/function:
+          name:
+            value: check_all
+- has:
+    description: |
+      Check all facts across all roots. Returns 0 if all pass.
+- has:
+    source_file:
+      type: str
+      value: pysrc/check.py

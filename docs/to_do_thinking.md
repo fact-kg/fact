@@ -16,3 +16,34 @@ behavior than borrowing EARS patterns. A condition is just another input.
 Revisit when we start expressing behavioral requirements as facts.
 
 Reference: https://alistairmavin.com/ears/
+
+## JSON output for check and verify tools
+
+Add `--output-json` flag to `check.py` and `verify.py` so that LLM agents and
+scripts can consume structured output instead of parsing human-readable text.
+
+Current assessment: not needed yet. Claude handles the text output fine.
+Revisit when we build automation that chains tool outputs or when the output
+gets complex enough that text parsing becomes unreliable.
+
+## Rust verifier — multi-language fact-driven development
+
+Rust has proc macros and custom attributes that mirror Python's `@fact` decorator:
+
+```rust
+#[fact("app/org/igorlesik/fact/pysrc/kg_module")]
+struct Kg { ... }
+```
+
+The `syn` crate can parse Rust AST to find `#[fact(...)]`, struct fields,
+method signatures, and trait implementations. Same verification logic,
+different language frontend.
+
+Key difference from Python: Rust uses traits (interfaces) not inheritance,
+so we'd need `implements_trait` instead of `parent_class` — reinforcing
+that fact vocabulary should be language-specific (`computer/sw/lang/rust/`).
+
+This is potentially the real value of the project: write facts once as
+language-agnostic specifications, verify against any language with AST tooling.
+
+Revisit after the Python verifier is mature and the `src/` Rust code is revived.

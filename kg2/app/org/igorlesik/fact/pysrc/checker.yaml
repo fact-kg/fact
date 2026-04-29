@@ -8,3 +8,16 @@
     source_file:
       type: str
       value: pysrc/check.py
+- has:
+    function_main:
+      type: computer/sw/lang/python/function
+      as:
+        - computer/sw/lang/python/function:
+            name:
+              value: main
+- has:
+    function_check_one:
+      type: app/org/igorlesik/fact/pysrc/checker/check_one
+- has:
+    function_check_all:
+      type: app/org/igorlesik/fact/pysrc/checker/check_all
