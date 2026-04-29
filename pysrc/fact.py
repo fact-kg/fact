@@ -1,9 +1,11 @@
 import logging
 from kg import KgIface
 from typing import Dict
+from fact_decorator import fact
 
 log = logging.getLogger(__name__)
 
+@fact("app/org/igorlesik/fact/pysrc/fact_module")
 class Fact:
     """Element of knowledge"""
 

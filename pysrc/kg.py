@@ -4,6 +4,7 @@ import jsonschema
 from pathlib import Path
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List
+from fact_decorator import fact
 
 log = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ class KgIface(ABC):
         """Check if fact loaded into KG memory."""
         pass
 
+@fact("app/org/igorlesik/fact/pysrc/kg_module")
 class Kg(KgIface):
     """Knowledge Graph."""
 

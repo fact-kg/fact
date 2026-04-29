@@ -67,6 +67,22 @@ def find_class_in_source(source_path, class_name):
 
     return None, None
 
+def find_fact_decorators_in_source(source_path):
+    """Find all @fact(...) decorators. Returns {class_name: fact_path}."""
+    source = source_path.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    result = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef):
+            for dec in node.decorator_list:
+                if (isinstance(dec, ast.Call)
+                    and isinstance(dec.func, ast.Name)
+                    and dec.func.id == "fact"
+                    and dec.args
+                    and isinstance(dec.args[0], ast.Constant)):
+                    result[node.name] = dec.args[0].value
+    return result
+
 def find_module_facts(kg, program_fact_name):
     """Follow has references from a program fact to find verifiable modules."""
     info = kg.get_fact(program_fact_name).get("info", {})
@@ -119,6 +135,20 @@ def verify_module(kg, fact_name, src_root, results):
         return 1
 
     errors = 0
+
+    decorators = find_fact_decorators_in_source(source_path)
+    if class_name in decorators:
+        dec_path = decorators[class_name]
+        if dec_path == fact_name:
+            console.print(f"  [green]OK[/green]    @fact decorator matches")
+            results.append(("decorator", class_name, "@fact", "OK"))
+        else:
+            console.print(f"  [red]FAIL[/red]  @fact decorator says '{dec_path}', expected '{fact_name}'")
+            results.append(("decorator", class_name, "@fact", "FAIL"))
+            errors += 1
+    else:
+        console.print(f"  [yellow]WARN[/yellow]  no @fact decorator on class '{class_name}'")
+        results.append(("decorator", class_name, "@fact", "WARN"))
 
     if fact_parents:
         for p in fact_parents:
