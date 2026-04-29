@@ -13,6 +13,13 @@
       type: str
       value: Kg
 - has:
+    parent_class:
+      type: computer/sw/lang/python/class
+      as:
+        - computer/sw/lang/python/class:
+            name:
+              value: KgIface
+- has:
     method_load:
       type: computer/sw/lang/python/class_method
       as:
