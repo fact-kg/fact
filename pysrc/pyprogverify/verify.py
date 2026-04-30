@@ -16,8 +16,27 @@ from fact import Fact
 
 console = Console()
 
+def extract_fact_link_from_annotation(annotation):
+    """Extract fact_link(...) args from an Annotated[..., fact_link(...)] annotation."""
+    if not (isinstance(annotation, ast.Subscript)
+            and isinstance(annotation.value, ast.Name)
+            and annotation.value.id == "Annotated"):
+        return None
+    if not isinstance(annotation.slice, ast.Tuple):
+        return None
+    for elt in annotation.slice.elts:
+        if (isinstance(elt, ast.Call)
+            and isinstance(elt.func, ast.Name)
+            and elt.func.id == "fact_link"
+            and elt.args
+            and isinstance(elt.args[0], ast.Constant)):
+            fact_path = elt.args[0].value
+            field = elt.args[1].value if len(elt.args) > 1 and isinstance(elt.args[1], ast.Constant) else None
+            return fact_path, field
+    return None
+
 def find_fact_links_in_source(source_path):
-    """Find all @fact(...) decorators. Returns list of (element_name, fact_path, field_or_None)."""
+    """Find all @fact decorators and fact_link annotations. Returns list of (element_name, fact_path, field_or_None)."""
     source = source_path.read_text(encoding="utf-8")
     tree = ast.parse(source)
     links = []
@@ -32,6 +51,17 @@ def find_fact_links_in_source(source_path):
                     fact_path = dec.args[0].value
                     field = dec.args[1].value if len(dec.args) > 1 and isinstance(dec.args[1], ast.Constant) else None
                     links.append((node.name, fact_path, field))
+        if isinstance(node, ast.AnnAssign) and node.target:
+            result = extract_fact_link_from_annotation(node.annotation)
+            if result:
+                fact_path, field = result
+                if isinstance(node.target, ast.Attribute):
+                    name = f"self.{node.target.attr}"
+                elif isinstance(node.target, ast.Name):
+                    name = node.target.id
+                else:
+                    continue
+                links.append((name, fact_path, field))
     return links
 
 def verify_source(source_path, kg, results):

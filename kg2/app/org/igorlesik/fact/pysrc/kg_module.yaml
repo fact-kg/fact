@@ -20,6 +20,10 @@
             name:
               value: KgIface
 - has:
+    data_storage:
+      type: str
+      value: dictionary of loaded facts
+- has:
     method_load:
       type: app/org/igorlesik/fact/pysrc/kg_module/load
 - has:

@@ -3,8 +3,8 @@ import yaml
 import jsonschema
 from pathlib import Path
 from abc import ABC, abstractmethod
-from typing import Dict, Any, List
-from fact_decorator import fact
+from typing import Annotated, Dict, Any, List
+from fact_decorator import fact, fact_link
 
 log = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class Kg(KgIface):
         self.roots = roots
         self.schema = schema
         self.validator = jsonschema.Draft202012Validator(schema)
-        self.data : Dict[str, Any] = {}
+        self.data: Annotated[Dict[str, Any], fact_link("app/org/igorlesik/fact/pysrc/kg_module", "data_storage")] = {}
 
     def get_dict(self) -> Dict[str, Any]:
         """Get whole dictionary."""
