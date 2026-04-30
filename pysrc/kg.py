@@ -35,14 +35,17 @@ class Kg(KgIface):
         self.validator = jsonschema.Draft202012Validator(schema)
         self.data: Annotated[Dict[str, Any], fact_link("app/org/igorlesik/fact/pysrc/kg_module", "data_storage")] = {}
 
+    @fact("app/org/igorlesik/fact/pysrc/kg_module", "method_get_dict")
     def get_dict(self) -> Dict[str, Any]:
         """Get whole dictionary."""
         return self.data
 
+    @fact("app/org/igorlesik/fact/pysrc/kg_module", "method_get_fact")
     def get_fact(self, name: str) -> Dict:
         """Get data about fact from dictionary."""
         return self.data[name]
 
+    @fact("app/org/igorlesik/fact/pysrc/kg_module", "method_is_loaded")
     def is_loaded(self, fact_name) -> bool:
         """Check if fact loaded into KG memory."""
         return fact_name in self.data
@@ -80,6 +83,7 @@ class Kg(KgIface):
             return 1
         return 0
 
+    @fact("app/org/igorlesik/fact/pysrc/kg_module", "method_validate_schema")
     def validate_schema(self, yaml_data: str) -> bool:
         try:
             self.validator.validate(yaml_data)

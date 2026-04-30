@@ -13,6 +13,7 @@ class Fact:
         self.kg = kg
         self.name = fact_name
 
+    @fact("app/org/igorlesik/fact/pysrc/fact_module", "method_construct")
     def construct(self) -> int:
         """Construct fact, create fields"""
 
@@ -40,6 +41,7 @@ class Fact:
 
         return 0
 
+    @fact("app/org/igorlesik/fact/pysrc/fact_module", "method_construct_what_it_is")
     def construct_what_it_is(self) -> int:
         """Check 'is' tags"""
 
@@ -54,6 +56,7 @@ class Fact:
 
         return 0
 
+    @fact("app/org/igorlesik/fact/pysrc/fact_module", "method_construct_tag_is")
     def construct_tag_is(self, tag: dict) -> int:
         """Construct what fact is"""
 
@@ -77,6 +80,7 @@ class Fact:
 
         return ret_status
 
+    @fact("app/org/igorlesik/fact/pysrc/fact_module", "method_parse_construct_tag_is_dict")
     def parse_construct_tag_is_dict(self, info: dict) -> int:
         """Construct phase parse is dict"""
 
@@ -108,6 +112,7 @@ class Fact:
 
         return 0
 
+    @fact("app/org/igorlesik/fact/pysrc/fact_module", "method_parse_construct_tag_is_as_type")
     def parse_construct_tag_is_as_type(self, as_type: dict) -> tuple[int, str, dict]:
         log.debug("as type %s", as_type)
         err = 0
@@ -120,6 +125,7 @@ class Fact:
 
         return (err, type_name, as_type_val)
 
+    @fact("app/org/igorlesik/fact/pysrc/fact_module", "method_construct_what_it_part")
     def construct_what_it_part(self) -> int:
         """Check 'part' tags"""
 
@@ -133,6 +139,7 @@ class Fact:
 
         return 0
 
+    @fact("app/org/igorlesik/fact/pysrc/fact_module", "method_construct_tag_part")
     def construct_tag_part(self, tag: dict) -> int:
         """Construct what fact belongs to"""
 
@@ -159,6 +166,7 @@ class Fact:
 
         return ret_status
 
+    @fact("app/org/igorlesik/fact/pysrc/fact_module", "method_construct_what_it_has")
     def construct_what_it_has(self) -> int:
         """Check 'has' tags"""
 
@@ -172,6 +180,7 @@ class Fact:
 
         return 0
 
+    @fact("app/org/igorlesik/fact/pysrc/fact_module", "method_construct_tag_has")
     def construct_tag_has(self, tag: dict) -> int:
         """Construct what fact has"""
 
@@ -195,6 +204,7 @@ class Fact:
 
         return ret_status
 
+    @fact("app/org/igorlesik/fact/pysrc/fact_module", "method_parse_construct_tag_has_dict")
     def parse_construct_tag_has_dict(self, info: dict) -> int:
         """Construct phase parse has dict"""
 
