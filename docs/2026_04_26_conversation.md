@@ -242,3 +242,86 @@ Explored how facts can drive code, not just describe it. Current state:
 - Each module with `class_name` + `class_method` attributes is verifiable
 - Uses AST (static analysis), never imports target code
 - `--src-root` parameter for generic use with any project
+
+---
+
+# Session Notes — April 29, 2026
+
+## Design Shift: Simplified `@fact` Linking
+
+### The problem with the old approach
+
+The verifier was 300+ lines of Python-specific introspection — it checked class
+names, method lists, parent classes, function names. Each new code element type
+(class, method, function, field) required new detection logic. The facts needed
+Python-specific types (`computer/sw/lang/python/class_method`, etc.) and
+attributes like `source_file`, `class_name` to guide the verifier.
+
+### The new approach
+
+`@fact` is a generic link between code and facts. The verifier only validates
+that the link is valid — the referenced fact (and optionally field) exists.
+No introspection of what the code element is or does.
+
+Three linking mechanisms:
+
+**1. `@fact("path")` — on classes and functions**
+```python
+@fact("app/org/igorlesik/fact/pysrc/kg_module")
+class Kg(KgIface):
+```
+
+**2. `@fact("path", "field")` — linking to a specific `has` attribute**
+```python
+@fact("app/org/igorlesik/fact/pysrc/kg_module", "method_find_fact_file")
+def find_fact_file(self, fact_name) -> Path:
+```
+
+**3. `Annotated[type, fact_link("path", "field")]` — for variables/fields**
+```python
+self.data: Annotated[Dict[str, Any], fact_link(
+    "app/org/igorlesik/fact/pysrc/kg_module", "data_storage")] = {}
+```
+
+### What the verifier checks
+
+1. The fact path exists as a real fact file
+2. If a field name is given, the fact has that `has` attribute
+3. Nothing else — no method lists, no class introspection
+
+### Verifier invocation changed
+
+Old: point at a fact, it finds source files.
+```bash
+verify.py app/org/igorlesik/fact/pysrc
+```
+
+New: point at source files, it finds `@fact` links.
+```bash
+verify.py pysrc/check.py pysrc/kg.py pysrc/fact.py
+```
+
+### Benefits
+
+- Verifier is ~100 lines instead of ~300
+- Language-agnostic design — same concept works for Rust, etc.
+- No Python-specific fact types needed for linking
+- Deeper checking (methods exist, fields match) can be done by LLM agents
+  using the established links — doesn't need to be rigid tooling
+
+### Both `@fact` styles tested for functions and methods
+
+**Separate fact file** — code element gets its own fact:
+```python
+@fact("app/org/igorlesik/fact/pysrc/checker/check_one")
+def check_one(kg, fact_name):
+```
+
+**Inline attribute** — code element references a field on a parent fact:
+```python
+@fact("app/org/igorlesik/fact/pysrc/checker", "function_main")
+def main():
+```
+
+Both coexist. The comparison will reveal which style is more natural as the
+project grows.

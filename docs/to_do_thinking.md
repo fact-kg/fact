@@ -47,3 +47,30 @@ This is potentially the real value of the project: write facts once as
 language-agnostic specifications, verify against any language with AST tooling.
 
 Revisit after the Python verifier is mature and the `src/` Rust code is revived.
+
+## YAML block scalars as embedded structured data
+
+YAML `|` block scalars can contain YAML-formatted content as plain text:
+
+```yaml
+- has:
+    config_template: |
+      - host: localhost
+        port: 8080
+        options:
+          timeout: 30
+          retries: 3
+```
+
+The content is a string to the fact system but parseable on demand. This creates
+a middle tier in the epistemology:
+
+1. **Strong tags** (`is`, `has`) — fully structured, verified by checker
+2. **`|` block with structured content** — carried but opaque to the checker,
+   parseable by programs or LLM agents when needed
+3. **LLM-inferred** — not in the fact at all
+
+This avoids extending the type system beyond `str`, `num`, `list` while
+allowing arbitrarily complex data structures inside facts. Could be used for
+examples, templates, complex configurations, or data that doesn't fit the
+current tag model.
