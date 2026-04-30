@@ -66,6 +66,7 @@ Exit codes: 0 = success, 1 = file/load error, 2 = schema error, 3 = construction
 - Read facts in `kg2/app/org/igorlesik/fact/` to understand the system's self-description
 - Run `python.exe pysrc/check.py --roots kg,kg2 --all` after modifying any YAML facts
 - Run `python.exe pysrc/pyprogverify/verify.py --roots=kg,kg2 --src-root=. pysrc/check.py pysrc/kg.py pysrc/fact.py` after modifying Python code
+- Run `/pycode-fact-review` when adding/removing/renaming `@fact`-decorated elements
 - Use LF line endings, not CRLF
 - Do not modify files under `src/` (Rust, dormant)
 
