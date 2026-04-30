@@ -47,6 +47,7 @@ class Kg(KgIface):
         """Check if fact loaded into KG memory."""
         return fact_name in self.data
 
+    @fact("app/org/igorlesik/fact/pysrc/kg_module", "method_find_fact_file")
     def find_fact_file(self, fact_name) -> Path:
         """Find fact file across all roots. Returns path or None."""
         found = []
@@ -64,6 +65,7 @@ class Kg(KgIface):
             return None
         return found[0]
 
+    @fact("app/org/igorlesik/fact/pysrc/kg_module/load")
     def load(self, fact_name, force_reload = False) -> int:
         if self.is_loaded(fact_name) and not force_reload:
             return 0

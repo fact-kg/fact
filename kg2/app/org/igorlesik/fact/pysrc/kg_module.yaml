@@ -21,11 +21,7 @@
               value: KgIface
 - has:
     method_load:
-      type: computer/sw/lang/python/class_method
-      as:
-        - computer/sw/lang/python/class_method:
-            name:
-              value: load
+      type: app/org/igorlesik/fact/pysrc/kg_module/load
 - has:
     method_find_fact_file:
       type: computer/sw/lang/python/class_method

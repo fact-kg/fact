@@ -1,0 +1,13 @@
+- is:
+    type: computer/sw/lang/python/class_method
+    as:
+      - computer/sw/lang/python/class_method:
+          name:
+            value: load
+- has:
+    description: |
+      Load a fact from file into memory. Returns 0 on success.
+- has:
+    source_file:
+      type: str
+      value: pysrc/kg.py

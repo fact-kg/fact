@@ -58,7 +58,7 @@ def check_all(kg, roots, use_progress=False):
         return 1
     return 0
 
-@fact("app/org/igorlesik/fact/pysrc/checker")
+@fact("app/org/igorlesik/fact/pysrc/checker", "function_main")
 def main():
     """Main entry point."""
 
