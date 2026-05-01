@@ -90,3 +90,56 @@ def get_fact(path: str, request: Request):
     return templates.TemplateResponse(request, "404.html", {
         "path": path,
     }, status_code=404)
+
+@app.get("/graph/{path:path}")
+def get_graph(path: str, request: Request):
+    has_fact = any((root / (path + ".yaml")).exists() for root in ROOTS)
+
+    if not has_fact or kg.load(path) != 0:
+        return templates.TemplateResponse(request, "404.html", {
+            "path": path,
+        }, status_code=404)
+
+    fact = Fact(kg, path)
+    fact.construct()
+    info = kg.get_fact(path).get("info", {})
+
+    nodes = [{"id": path, "label": path.rsplit("/", 1)[-1], "group": "current"}]
+    edges = []
+    seen = {path}
+
+    for t in info.get("type", []):
+        if t not in ("str", "num") and t not in seen:
+            nodes.append({"id": t, "label": t.rsplit("/", 1)[-1], "group": "type"})
+            edges.append({"from": path, "to": t, "label": "is"})
+            seen.add(t)
+
+    for attr, val in info.get("has", {}).items():
+        t = val.get("type", "")
+        if t and t not in ("str", "num", "list") and t not in seen:
+            nodes.append({"id": t, "label": t.rsplit("/", 1)[-1], "group": "has"})
+            edges.append({"from": path, "to": t, "label": f"has: {attr}"})
+            seen.add(t)
+
+    for p in info.get("part", []):
+        if p not in seen:
+            nodes.append({"id": p, "label": p.rsplit("/", 1)[-1], "group": "part"})
+            edges.append({"from": path, "to": p, "label": "part"})
+            seen.add(p)
+
+    children = list_children(path)
+    for c in children:
+        if c["path"] not in seen:
+            nodes.append({"id": c["path"], "label": c["name"], "group": "child"})
+            edges.append({"from": path, "to": c["path"], "label": "child"})
+            seen.add(c["path"])
+
+    if "application/json" in request.headers.get("accept", ""):
+        return JSONResponse({"nodes": nodes, "edges": edges})
+
+    return templates.TemplateResponse(request, "graph.html", {
+        "path": path,
+        "name": path.rsplit("/", 1)[-1],
+        "breadcrumb": make_breadcrumb(path),
+        "graph_data": {"nodes": nodes, "edges": edges},
+    })

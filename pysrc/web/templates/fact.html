@@ -2,7 +2,7 @@
 {% block title %}{{ path }} — Fact KG{% endblock %}
 {% block breadcrumb %}{{ breadcrumb | safe }}{% endblock %}
 {% block content %}
-<h1>{{ name }}</h1>
+<h1>{{ name }} <small><a href="/graph/{{ path }}">graph</a></small></h1>
 
 <p><mark>is:
   {% for t in types %}

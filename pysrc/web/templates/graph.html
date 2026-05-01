@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Graph: {{ path }} — Fact KG{% endblock %}
+{% block breadcrumb %}{{ breadcrumb | safe }}{% endblock %}
+{% block head %}
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<style>
+  #graph-container {
+    width: 100%;
+    height: 600px;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+  }
+</style>
+{% endblock %}
+{% block content %}
+<h1>{{ name }}</h1>
+<p><a href="/fact/{{ path }}">View details</a></p>
+<div id="graph-container"></div>
+<script>
+  var graphData = {{ graph_data | tojson }};
+
+  var colors = {
+    current: {background: '#4CAF50', border: '#388E3C'},
+    type: {background: '#2196F3', border: '#1565C0'},
+    has: {background: '#FF9800', border: '#E65100'},
+    part: {background: '#9C27B0', border: '#6A1B9A'},
+    child: {background: '#78909C', border: '#455A64'}
+  };
+
+  var nodes = new vis.DataSet(graphData.nodes.map(function(n) {
+    return {
+      id: n.id,
+      label: n.label,
+      color: colors[n.group] || colors.child,
+      font: {color: '#fff', size: 14},
+      shape: 'box',
+      margin: 10
+    };
+  }));
+
+  var edges = new vis.DataSet(graphData.edges.map(function(e) {
+    return {
+      from: e.from,
+      to: e.to,
+      label: e.label,
+      arrows: 'to',
+      font: {size: 11, align: 'middle'}
+    };
+  }));
+
+  var container = document.getElementById('graph-container');
+  var network = new vis.Network(container, {nodes: nodes, edges: edges}, {
+    physics: {
+      solver: 'forceAtlas2Based',
+      forceAtlas2Based: {gravitationalConstant: -50, springLength: 150}
+    },
+    interaction: {hover: true, navigationButtons: true},
+    layout: {improvedLayout: true}
+  });
+
+  network.on('doubleClick', function(params) {
+    if (params.nodes.length > 0) {
+      window.location.href = '/graph/' + params.nodes[0];
+    }
+  });
+
+  network.on('click', function(params) {
+    if (params.nodes.length > 0) {
+      window.location.href = '/fact/' + params.nodes[0];
+    }
+  });
+</script>
+{% endblock %}
