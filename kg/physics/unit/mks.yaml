@@ -1,0 +1,13 @@
+- is: MKS unit system
+- has:
+    m:
+      type: num
+- has:
+    k:
+      type: num
+- has:
+    s:
+      type: num
+- has:
+    a:
+      type: num

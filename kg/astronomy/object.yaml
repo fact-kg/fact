@@ -4,4 +4,4 @@
 - part: astronomy/universe
 - has:
     mass:
-      type: num
+      type: physics/unit/si/kilogram

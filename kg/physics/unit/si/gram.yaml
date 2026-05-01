@@ -1,0 +1,6 @@
+- is:
+    type: physics/unit/mks/mass
+- has:
+    exponent:
+      type: num
+      value: -3
