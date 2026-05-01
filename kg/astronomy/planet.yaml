@@ -6,3 +6,12 @@
 - has:
     orbital_period:
       type: physics/unit/si/second
+- has:
+    semi_major_axis:
+      type: physics/unit/si/meter
+- has:
+    eccentricity:
+      type: num
+- has:
+    surface_type:
+      type: str

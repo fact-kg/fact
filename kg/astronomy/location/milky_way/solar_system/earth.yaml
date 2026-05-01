@@ -9,4 +9,10 @@
             value: 6371000
           orbital_period:
             value: 31557600
+          semi_major_axis:
+            value: 149598000000
+          eccentricity:
+            value: 0.0167
+          surface_type:
+            value: terrestrial
 - part: astronomy/location/milky_way/solar_system

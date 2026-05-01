@@ -9,4 +9,10 @@
             value: 24622000
           orbital_period:
             value: 5200418560
+          semi_major_axis:
+            value: 4495060000000
+          eccentricity:
+            value: 0.0113
+          surface_type:
+            value: ice giant
 - part: astronomy/location/milky_way/solar_system

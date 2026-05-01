@@ -32,13 +32,17 @@
   </header>
   <main class="container">
     <h1>Solar System Planets</h1>
+    <details>
+      <summary>Add/remove columns</summary>
+      <div id="col-picker"></div>
+    </details>
     <div style="overflow-x: auto;">
     <table>
       <thead>
         <tr>
           <th style="cursor:pointer" onclick="sortTable(0)">Planet</th>
           {% for prop in properties %}
-          <th style="cursor:pointer" onclick="sortTable({{ loop.index }})">{{ prop }}{% if prop in units %} <small>({{ units[prop] }})</small>{% endif %}</th>
+          <th data-prop="{{ prop }}" style="cursor:pointer" onclick="sortTable({{ loop.index }})">{{ prop }}{% if prop in units %} <small>({{ units[prop] }})</small>{% endif %}</th>
           {% endfor %}
         </tr>
       </thead>
@@ -47,7 +51,7 @@
         <tr>
           <td><a href="/fact/{{ item.path }}">{{ item.name }}</a></td>
           {% for prop in properties %}
-          <td>{{ item.props[prop] if prop in item.props else '' }}</td>
+          <td data-prop="{{ prop }}">{{ item.props[prop] if prop in item.props else '' }}</td>
           {% endfor %}
         </tr>
         {% endfor %}
@@ -56,6 +60,37 @@
     </div>
   </main>
   <script>
+    var defaultCols = ['mass', 'equatorial_radius', 'orbital_period'];
+
+    function setColVisible(prop, visible) {
+      var display = visible ? '' : 'none';
+      document.querySelectorAll('[data-prop="' + prop + '"]').forEach(function(el) {
+        el.style.display = display;
+      });
+    }
+
+    function buildPicker() {
+      var picker = document.getElementById('col-picker');
+      var allProps = [];
+      document.querySelectorAll('thead th[data-prop]').forEach(function(th) {
+        allProps.push(th.dataset.prop);
+      });
+      allProps.forEach(function(prop) {
+        var isDefault = defaultCols.indexOf(prop) >= 0;
+        var label = document.createElement('label');
+        label.style.display = 'inline';
+        label.style.marginRight = '1em';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = isDefault;
+        cb.onchange = function() { setColVisible(prop, cb.checked); };
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(' ' + prop));
+        picker.appendChild(label);
+        if (!isDefault) setColVisible(prop, false);
+      });
+    }
+
     var sortDir = {};
     function sortTable(col) {
       var table = document.querySelector('table');
@@ -73,6 +108,8 @@
       });
       rows.forEach(function(r) { tbody.appendChild(r); });
     }
+
+    buildPicker();
   </script>
 </body>
 </html>

@@ -9,4 +9,10 @@
             value: 58232000
           orbital_period:
             value: 929596608
+          semi_major_axis:
+            value: 1433530000000
+          eccentricity:
+            value: 0.0565
+          surface_type:
+            value: gas giant
 - part: astronomy/location/milky_way/solar_system
