@@ -24,7 +24,10 @@
 <body>
   <header class="container">
     <nav>
-      <ul><li><strong><a href="/">Fact KG</a></strong></li></ul>
+      <ul>
+        <li><strong><a href="/">Fact KG</a></strong></li>
+        <li><details class="dropdown"><summary>Apps</summary><ul><li><a href="/apps/astronomy/planet_compare/">Planet Compare</a></li></ul></details></li>
+      </ul>
       <ul>
         <li>{% block breadcrumb %}{% endblock %}</li>
         <li><form action="/search" method="get" style="margin:0"><input type="search" name="q" placeholder="Search..." style="margin:0;padding:4px 8px;width:150px"></form></li>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Planet Compare — Fact KG</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <script>
+    function toggleTheme() {
+      var h = document.documentElement;
+      var c = h.getAttribute('data-theme');
+      var n = c === 'dark' ? 'light' : c === 'light' ? 'dark' :
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark');
+      h.setAttribute('data-theme', n);
+      localStorage.setItem('theme', n);
+    }
+    (function() {
+      var s = localStorage.getItem('theme');
+      if (s) document.documentElement.setAttribute('data-theme', s);
+    })();
+  </script>
+</head>
+<body>
+  <header class="container">
+    <nav>
+      <ul><li><strong><a href="/">Fact KG</a></strong></li></ul>
+      <ul>
+        <li><a href="/fact/astronomy/location/milky_way/solar_system">Solar System</a></li>
+        <li><a href="#" onclick="toggleTheme();return false">Toggle theme</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main class="container">
+    <h1>Solar System Planets</h1>
+    <div style="overflow-x: auto;">
+    <table>
+      <thead>
+        <tr>
+          <th style="cursor:pointer" onclick="sortTable(0)">Planet</th>
+          {% for prop in properties %}
+          <th style="cursor:pointer" onclick="sortTable({{ loop.index }})">{{ prop }}{% if prop in units %} <small>({{ units[prop] }})</small>{% endif %}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td><a href="/fact/{{ item.path }}">{{ item.name }}</a></td>
+          {% for prop in properties %}
+          <td>{{ item.props[prop] if prop in item.props else '' }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </main>
+  <script>
+    var sortDir = {};
+    function sortTable(col) {
+      var table = document.querySelector('table');
+      var tbody = table.querySelector('tbody');
+      var rows = Array.from(tbody.querySelectorAll('tr'));
+      sortDir[col] = !sortDir[col];
+      rows.sort(function(a, b) {
+        var av = a.cells[col].textContent.trim();
+        var bv = b.cells[col].textContent.trim();
+        var an = parseFloat(av), bn = parseFloat(bv);
+        if (!isNaN(an) && !isNaN(bn)) {
+          return sortDir[col] ? an - bn : bn - an;
+        }
+        return sortDir[col] ? av.localeCompare(bv) : bv.localeCompare(av);
+      });
+      rows.forEach(function(r) { tbody.appendChild(r); });
+    }
+  </script>
+</body>
+</html>
