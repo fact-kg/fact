@@ -74,3 +74,20 @@ This avoids extending the type system beyond `str`, `num`, `list` while
 allowing arbitrarily complex data structures inside facts. Could be used for
 examples, templates, complex configurations, or data that doesn't fit the
 current tag model.
+
+## Web UI design decisions
+
+Stack: FastAPI + Jinja2 + HTMX + vis.js + classless CSS (Pico or Simple.css).
+
+- **HTMX** for navigation and dynamic content — server renders HTML, minimal JS
+- **vis.js** for interactive graph visualization — self-contained, no framework needed
+- **Classless CSS** for styling — write semantic HTML, looks professional automatically
+- **No build tools** — no npm, no webpack, just `<script>` tags
+- **Zero lock-in** — each piece is replaceable independently
+
+Design principles: minimal, professionally elegant, fast. Good typography and
+spacing matter more than animations or effects. The graph visualization is the
+key interactive element.
+
+Dual output: HTML for humans, JSON for bots/agents. Same endpoints, content
+negotiation via Accept header.
