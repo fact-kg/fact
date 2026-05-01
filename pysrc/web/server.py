@@ -11,7 +11,12 @@ from kg import Kg
 from fact import Fact
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
-ROOTS = [PROJECT_DIR / "kg", PROJECT_DIR / "kg2"]
+
+config_path = PROJECT_DIR / "fact-server.yaml"
+with open(config_path, "r", encoding="utf-8") as f:
+    config = yaml.safe_load(f.read())
+
+ROOTS = [PROJECT_DIR / r["path"] for r in config["roots"]]
 
 with open(PROJECT_DIR / "schema.yaml", "r", encoding="utf-8") as f:
     schema = yaml.safe_load(f.read())
