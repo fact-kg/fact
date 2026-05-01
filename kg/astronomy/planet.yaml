@@ -1,0 +1,8 @@
+- is:
+    type: astronomy/object
+- has:
+    equatorial_radius:
+      type: physics/unit/si/meter
+- has:
+    orbital_period:
+      type: physics/unit/si/second

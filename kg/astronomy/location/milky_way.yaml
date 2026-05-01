@@ -1,0 +1,6 @@
+- is:
+    type: astronomy/galaxy
+- has:
+    mass:
+      type: physics/unit/si/kilogram
+      value: 2.0e42

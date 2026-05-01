@@ -1,0 +1,12 @@
+- is:
+    type: astronomy/planet
+    as:
+      - astronomy/object:
+          mass:
+            value: 8.681e25
+      - astronomy/planet:
+          equatorial_radius:
+            value: 25362000
+          orbital_period:
+            value: 2651370019
+- part: astronomy/location/milky_way/solar_system

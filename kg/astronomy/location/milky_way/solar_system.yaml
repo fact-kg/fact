@@ -1,0 +1,3 @@
+- is:
+    type: astronomy/star_system
+- part: astronomy/location/milky_way

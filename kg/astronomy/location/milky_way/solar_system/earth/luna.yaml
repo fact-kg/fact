@@ -1,0 +1,12 @@
+- is:
+    type: astronomy/moon
+    as:
+      - astronomy/object:
+          mass:
+            value: 7.342e22
+      - astronomy/moon:
+          equatorial_radius:
+            value: 1737400
+          orbital_period:
+            value: 2360592
+- part: astronomy/location/milky_way/solar_system/earth
