@@ -91,6 +91,30 @@ def get_fact(path: str, request: Request):
         "path": path,
     }, status_code=404)
 
+@app.get("/search", response_class=HTMLResponse)
+def search(request: Request, q: str = ""):
+    if not q:
+        return templates.TemplateResponse(request, "search.html", {
+            "query": "",
+            "results": [],
+        })
+    q_lower = q.lower()
+    results = []
+    for root in ROOTS:
+        for yaml_file in root.rglob("*.yaml"):
+            fact_path = str(yaml_file.relative_to(root).with_suffix('')).replace('\\', '/')
+            if q_lower in fact_path.lower():
+                results.append({"path": fact_path, "name": fact_path.rsplit("/", 1)[-1]})
+    results.sort(key=lambda r: r["path"])
+
+    if "application/json" in request.headers.get("accept", ""):
+        return JSONResponse(results)
+
+    return templates.TemplateResponse(request, "search.html", {
+        "query": q,
+        "results": results,
+    })
+
 @app.get("/graph/{path:path}")
 def get_graph(path: str, request: Request):
     has_fact = any((root / (path + ".yaml")).exists() for root in ROOTS)

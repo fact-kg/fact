@@ -27,6 +27,7 @@
       <ul><li><strong><a href="/">Fact KG</a></strong></li></ul>
       <ul>
         <li>{% block breadcrumb %}{% endblock %}</li>
+        <li><form action="/search" method="get" style="margin:0"><input type="search" name="q" placeholder="Search..." style="margin:0;padding:4px 8px;width:150px"></form></li>
         <li><a href="#" onclick="toggleTheme();return false">Toggle theme</a></li>
       </ul>
     </nav>
