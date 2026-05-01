@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Fact KG{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <script>
+    function toggleTheme() {
+      var h = document.documentElement;
+      var c = h.getAttribute('data-theme');
+      var n = c === 'dark' ? 'light' : c === 'light' ? 'dark' :
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark');
+      h.setAttribute('data-theme', n);
+      localStorage.setItem('theme', n);
+    }
+    (function() {
+      var s = localStorage.getItem('theme');
+      if (s) document.documentElement.setAttribute('data-theme', s);
+    })();
+  </script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="container">
+    <nav>
+      <ul><li><strong><a href="/">Fact KG</a></strong></li></ul>
+      <ul>
+        <li>{% block breadcrumb %}{% endblock %}</li>
+        <li><a href="#" onclick="toggleTheme();return false">Toggle theme</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

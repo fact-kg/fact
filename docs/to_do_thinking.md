@@ -91,3 +91,35 @@ key interactive element.
 
 Dual output: HTML for humans, JSON for bots/agents. Same endpoints, content
 negotiation via Accept header.
+
+### Deployment options
+
+For running the web service publicly:
+
+1. **Railway / Render / Fly.io** — push git, auto-deploys. Free tier. Easiest.
+2. **DigitalOcean App Platform** — similar, ~$5/month.
+3. **Small VPS** (DigitalOcean, Linode, Hetzner) — $4-6/month, more control.
+4. **AWS** — overkill for this size. Only if already in AWS ecosystem.
+
+Recommended starting point: Render or Railway. Need a `requirements.txt` with:
+fastapi, uvicorn, pyyaml, jsonschema, rich, jinja2.
+
+### Roots as separate repos
+
+Each fact root will eventually be its own git repo. The server needs a config
+file listing roots and their sources:
+
+```yaml
+# fact-server.yaml
+roots:
+  - path: kg
+    repo: https://github.com/igorlesik/fact-kg
+  - path: kg2
+    repo: https://github.com/igorlesik/fact-kg2
+```
+
+For local dev: paths point to local directories.
+For deployment: server clones repos on startup.
+
+Design the server with this in mind from the start — roots should be
+configurable, not hardcoded. Implement when refactoring to Jinja2 templates.

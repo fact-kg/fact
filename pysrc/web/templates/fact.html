@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}{{ path }} — Fact KG{% endblock %}
+{% block breadcrumb %}{{ breadcrumb | safe }}{% endblock %}
+{% block content %}
+<h1>{{ name }}</h1>
+
+<p><mark>is:
+  {% for t in types %}
+    {% if t not in ['str', 'num'] %}
+      <a href="/fact/{{ t }}">{{ t }}</a>
+    {% else %}
+      {{ t }}
+    {% endif %}
+    {% if not loop.last %}, {% endif %}
+  {% endfor %}
+</mark></p>
+
+{% if val_as %}
+<h3>Values</h3>
+<table>
+  <thead><tr><th>Property</th><th>As type</th><th>Value</th></tr></thead>
+  <tbody>
+    {% for type_name, attrs in val_as.items() %}
+      {% for attr, val in attrs.items() %}
+      <tr>
+        <td><b>{{ attr }}</b></td>
+        <td><a href="/fact/{{ type_name }}">{{ type_name }}</a></td>
+        <td>{{ val }}</td>
+      </tr>
+      {% endfor %}
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if has %}
+<h3>Properties</h3>
+<table>
+  <thead><tr><th>Name</th><th>Type</th><th>Value</th></tr></thead>
+  <tbody>
+    {% for attr, val in has.items() %}
+    <tr>
+      <td><b>{{ attr }}</b></td>
+      <td>
+        {% if val.type and val.type not in ['str', 'num', 'list'] %}
+          <a href="/fact/{{ val.type }}">{{ val.type }}</a>
+        {% else %}
+          {{ val.type or '' }}
+        {% endif %}
+      </td>
+      <td>
+        {{ val.val or '' }}
+        {% if val.val_as %}
+          <br><small>{{ val.val_as }}</small>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if parts %}
+<h3>Part of</h3>
+<ul>
+  {% for p in parts %}
+  <li><a href="/fact/{{ p }}">{{ p }}</a></li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if children %}
+<h3>Children</h3>
+<ul>
+  {% for c in children %}
+  <li><a href="/fact/{{ c.path }}">{{ c.name }}</a></li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

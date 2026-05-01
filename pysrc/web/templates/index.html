@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Home — Fact KG{% endblock %}
+{% block content %}
+<h1>Knowledge Graph</h1>
+<ul>
+  {% for path in paths %}
+  <li><a href="/fact/{{ path }}">{{ path }}</a></li>
+  {% endfor %}
+</ul>
+{% endblock %}

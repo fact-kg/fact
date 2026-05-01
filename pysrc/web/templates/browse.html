@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ path }} — Fact KG{% endblock %}
+{% block breadcrumb %}{{ breadcrumb | safe }}{% endblock %}
+{% block content %}
+<h1>{{ name }}</h1>
+<ul>
+  {% for c in children %}
+  <li><a href="/fact/{{ c.path }}">{{ c.name }}</a></li>
+  {% endfor %}
+</ul>
+{% endblock %}
