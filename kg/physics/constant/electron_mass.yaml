@@ -1,6 +1,0 @@
-- is:
-    type: physics/unit/mks/mass
-- has:
-    factor:
-      type: num
-      value: 9.10938188e-31

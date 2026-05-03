@@ -1,6 +1,0 @@
-- is:
-    type: physics/unit/mks/charge
-- has:
-    factor:
-      type: num
-      value: 1.602176487e-19

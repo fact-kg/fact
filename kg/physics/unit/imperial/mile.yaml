@@ -1,6 +1,0 @@
-- is:
-    type: physics/unit/mks/length
-- has:
-    factor:
-      type: num
-      value: 1.609344e3

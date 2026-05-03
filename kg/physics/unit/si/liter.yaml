@@ -1,6 +1,0 @@
-- is:
-    type: physics/unit/mks/volume
-- has:
-    exponent:
-      type: num
-      value: -3
