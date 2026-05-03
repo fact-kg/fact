@@ -26,7 +26,9 @@ app = FastAPI(title="Fact Knowledge Graph")
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
 from pysrc.web.apps.astronomy.planet_compare.routes import router as planet_compare_router
+from pysrc.web.apps.physics.element_table.routes import router as element_table_router
 app.include_router(planet_compare_router)
+app.include_router(element_table_router)
 
 def make_breadcrumb(path):
     parts = path.split("/")

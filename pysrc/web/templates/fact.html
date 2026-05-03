@@ -49,7 +49,11 @@
         {% endif %}
       </td>
       <td>
-        {{ val.val or '' }}
+        {% if val.type == 'computer/sw/url' and val.val %}
+          <a href="{{ val.val }}" target="_blank">{{ val.val }}</a>
+        {% else %}
+          {{ val.val or '' }}
+        {% endif %}
         {% if val.val_as %}
           <br><small>{{ val.val_as }}</small>
         {% endif %}
