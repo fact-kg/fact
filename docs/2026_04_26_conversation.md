@@ -325,3 +325,153 @@ def main():
 
 Both coexist. The comparison will reveal which style is more natural as the
 project grows.
+
+---
+
+# Session Notes — May 2, 2026
+
+## Work Done
+
+### 1. Web server fixes
+
+- **`.git` filtering** — hidden directories (`.git`) filtered out from directory
+  listings in `list_children` and the index route. Triggered by adding
+  `../fact_physics` as a root (which is a git repo).
+- **Search input** — changed `type="search"` to `type="text"` to remove
+  magnifying glass icon overlapping placeholder text.
+- **Renamed "Children" to "Domains"** on fact pages — better reflects that
+  these are navigational filesystem paths, not semantic children.
+
+### 2. Removed "child" edges from graph view
+
+Graph view (`/graph/`) now only shows edges from the fact's own tags: `is`,
+`has`, `part`. Filesystem-based "child" edges removed. The Children/Domains
+section remains on fact pages as a navigation aid but is not part of the
+semantic graph.
+
+### 3. Planet Compare now uses `has` tags instead of filesystem scan
+
+Solar system fact (`astronomy/location/milky_way/solar_system.yaml`) now
+declares its bodies via `has` entries. Planet Compare app filters for
+`astronomy/planet` type instead of listing directory children.
+
+Added `has` entries for sun + 8 planets to `solar_system.yaml`.
+
+### 4. Moved `sun.yaml` to correct location
+
+`kg/astronomy/sun.yaml` → `kg/astronomy/location/milky_way/solar_system/sun.yaml`
+via `git mv`. Added `part: astronomy/location/milky_way/solar_system`.
+
+### 5. URL type and Wikipedia links
+
+- Created `kg/computer/sw/url.yaml` as a URL type fact.
+- Web server renders `has` properties with `type: computer/sw/url` as
+  clickable links (`<a>` with `target="_blank"`).
+- Added `wikipedia_url` to all 9 solar system bodies (sun + 8 planets).
+- Added `wikipedia_url` to all 118 chemical elements.
+
+### 6. Element Table web app
+
+Created `/apps/physics/element_table/` with three views:
+
+- **Mendeleev** (default) — classic 18-column periodic table grid, color-coded
+  by category, lanthanides/actinides separated.
+- **ADOMAH** — vertical layout by Valery Tsimmerman. 8 columns (n=1..8),
+  rows = s, p, d, f blocks stacking upward. Positions computed from
+  subshell facts, not hardcoded.
+- **List** — sortable table with all properties.
+
+Files:
+- `pysrc/web/apps/physics/element_table/routes.py`
+- `pysrc/web/apps/physics/element_table/templates/element_table.html`
+
+### 7. Atomic subshell facts
+
+Created `physics/atom/subshell.yaml` (type fact) and 19 individual subshell
+facts (`1s` through `7p`) in `fact_physics/physics/atom/subshell/`.
+
+Each subshell has: `principal_quantum_number`, `angular_momentum_quantum_number`,
+`max_electrons`, `block`.
+
+Added `valence_subshell` property to all 118 elements, referencing the actual
+observed subshell from Wikipedia's electron configuration data. ADOMAH view
+computes positions from these facts rather than a hardcoded map.
+
+### 8. Timing in check.py
+
+Added elapsed time output after fact checking (excludes startup/schema loading).
+
+### 9. check.bat
+
+Created `check.bat` with `ROOTS=kg,kg2,..\fact_physics` for convenient checking.
+
+---
+
+## Design Decisions
+
+### Filesystem children vs semantic relationships
+
+**Decision:** Filesystem directory listing is a navigation aid only. The graph
+view and apps should use `is`, `has`, `part` tags for semantic relationships.
+Filesystem "child" edges were removed from the graph.
+
+**Rationale:** Directory structure is organizational, not semantic. A subdirectory
+may contain related concepts but that doesn't mean a parent-child relationship
+exists in the knowledge graph.
+
+### URL as a typed property
+
+**Decision:** URLs use `type: computer/sw/url` rather than `type: str`. The web
+server checks the type to decide rendering (clickable link vs plain text).
+
+**Rationale:** With `type: str`, the renderer would have to guess from property
+names whether something is a URL. The type carries rendering semantics cleanly.
+
+### Store fundamental facts, not view-specific data
+
+**Decision:** Element `valence_subshell` stores the actual observed electron
+configuration, not the idealized aufbau position. The ADOMAH view computes
+from real data, resulting in slight differences from the original ADOMAH where
+elements have exceptional configurations (La, Ac, Cr, Cu, etc.).
+
+**Rationale:** The KG stores ground truth. Visualization choices belong in the
+presentation layer, not in facts.
+
+### Indexing — parked
+
+Discussed building property/type/part indexes in `Kg` for queries like "find
+all elements where category = noble gas". Two concerns raised:
+
+1. Not generic enough — only indexes `val_as`, not all property forms.
+2. Eager vs lazy — building on every `construct()` wastes work if nobody queries.
+
+**Decision:** Park until the LLM query interface is built, which will reveal
+actual access patterns worth indexing.
+
+---
+
+## Observations
+
+### Roofline analysis
+
+- ~7-10ms per fact is reasonable for pure Python (YAML parse + jsonschema +
+  construct). Bottleneck is CPU (interpreter overhead), not I/O.
+- 216 facts in ~10s. CSafeLoader would give 10-50x on parse alone.
+- Rust implementation in `src/` would bring check time to ~100ms range.
+
+### KG design validation
+
+The session stress-tested the design across a real domain (quantum mechanics):
+- `is`/`has`/`part` primitives handled element properties, subshell references,
+  and cross-root linking without schema changes.
+- Three visualization views built from the same fact data.
+- Cross-root references (elements in `fact_physics` referencing URL type in `kg`)
+  worked transparently.
+
+### Comparison with established KG systems
+
+Discussed positioning vs Neo4j, RDF/SPARQL, Wikidata, TigerGraph. The system
+occupies a unique niche: personal knowledge infrastructure optimized for
+human-writability, LLM-consumability, and zero deployment cost. Trades query
+speed for everything else. Filesystem + indexes can close the query gap for
+the access patterns that matter.
