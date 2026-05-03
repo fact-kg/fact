@@ -1,9 +1,0 @@
-- is:
-    type: str
-    value: function
-- has:
-    inputs:
-      type: list
-- has:
-    outputs:
-      type: list
