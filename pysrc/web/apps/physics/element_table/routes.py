@@ -34,8 +34,23 @@ def collect_values(info):
     return values
 
 
+BLOCK_OFFSET = {'f': 0, 'd': 14, 'p': 24, 's': 30}
+
+
 def load_elements():
     from pysrc.web.server import kg, ROOTS
+
+    subshell_cache = {}
+
+    def get_subshell_info(subshell_path):
+        if subshell_path in subshell_cache:
+            return subshell_cache[subshell_path]
+        info = load_fact_info(kg, subshell_path, ROOTS)
+        if info is None:
+            return None
+        vals = collect_values(info)
+        subshell_cache[subshell_path] = vals
+        return vals
 
     elements = []
     for root in ROOTS:
@@ -52,13 +67,42 @@ def load_elements():
             if ELEMENT_TYPE not in info.get("type", []):
                 continue
             values = collect_values(info)
-            if values:
-                elements.append({
-                    "name": f.stem,
-                    "path": fact_path,
-                    "props": values,
-                })
+            if not values:
+                continue
+            elem = {
+                "name": f.stem,
+                "path": fact_path,
+                "props": values,
+            }
+            has = info.get("has", {})
+            vs = has.get("valence_subshell", {})
+            vs_type = vs.get("type", "")
+            if vs_type and vs_type not in ("str", "num", "list"):
+                ss = get_subshell_info(vs_type)
+                if ss:
+                    elem["subshell_n"] = ss.get("principal_quantum_number", 0)
+                    elem["subshell_block"] = ss.get("block", "")
+            elements.append(elem)
+
     elements.sort(key=lambda e: e["props"].get("atomic_number", 0))
+
+    by_subshell = {}
+    for e in elements:
+        key = (e.get("subshell_n", 0), e.get("subshell_block", ""))
+        by_subshell.setdefault(key, []).append(e)
+
+    for e in elements:
+        n = e.get("subshell_n", 0)
+        block = e.get("subshell_block", "")
+        if not block or n == 0:
+            continue
+        group = by_subshell.get((n, block), [])
+        pos_in_subshell = group.index(e)
+        row = BLOCK_OFFSET.get(block, 0) + pos_in_subshell + 1
+        col = n
+        e["adomah_row"] = row
+        e["adomah_col"] = col
+
     return elements
 
 
