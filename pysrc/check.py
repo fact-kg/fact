@@ -101,13 +101,31 @@ def main():
     kg = Kg(roots, schema)
 
     import time
+    import sys
     t0 = time.perf_counter()
+
+    def deep_sizeof(obj, seen=None):
+        if seen is None:
+            seen = set()
+        obj_id = id(obj)
+        if obj_id in seen:
+            return 0
+        seen.add(obj_id)
+        size = sys.getsizeof(obj)
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                size += deep_sizeof(k, seen) + deep_sizeof(v, seen)
+        elif isinstance(obj, (list, tuple, set, frozenset)):
+            for item in obj:
+                size += deep_sizeof(item, seen)
+        return size
 
     if args.all:
         use_progress = not args.verbose and not args.debug
         result = check_all(kg, roots, use_progress)
         elapsed = time.perf_counter() - t0
-        print(f"Time: {elapsed:.3f}s")
+        mem = deep_sizeof(kg.data)
+        print(f"Time: {elapsed:.3f}s, KG memory: {mem / 1024:.1f} KB")
         return result
 
     fact_name = args.name
@@ -120,7 +138,8 @@ def main():
 
     result = check_one(kg, fact_name)
     elapsed = time.perf_counter() - t0
-    print(f"Time: {elapsed:.3f}s")
+    mem = sys.getsizeof(kg.data) + sum(sys.getsizeof(v) for v in kg.data.values())
+    print(f"Time: {elapsed:.3f}s, KG memory: {mem / 1024:.1f} KB")
     return result
 
 if __name__ == "__main__":

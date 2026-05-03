@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Unit Converter — Fact KG</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <script>
+    function toggleTheme() {
+      var h = document.documentElement;
+      var c = h.getAttribute('data-theme');
+      var n = c === 'dark' ? 'light' : c === 'light' ? 'dark' :
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark');
+      h.setAttribute('data-theme', n);
+      localStorage.setItem('theme', n);
+    }
+    (function() {
+      var s = localStorage.getItem('theme');
+      if (s) document.documentElement.setAttribute('data-theme', s);
+    })();
+  </script>
+</head>
+<body>
+  <header class="container">
+    <nav>
+      <ul><li><strong><a href="/">Fact KG</a></strong></li></ul>
+      <ul>
+        <li><a href="/fact/physics/unit">Units</a></li>
+        <li><a href="#" onclick="toggleTheme();return false">Toggle theme</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main class="container">
+    <h1>Unit Converter</h1>
+
+    <div class="grid">
+      <div>
+        <label for="dimension">Dimension</label>
+        <select id="dimension" onchange="updateUnits()">
+          {% for d in dimensions %}
+          <option value="{{ d }}">{{ d }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <label for="from-value">Value</label>
+        <input type="number" id="from-value" value="1" step="any" oninput="convert()">
+      </div>
+      <div>
+        <label for="from-unit">From</label>
+        <select id="from-unit" onchange="convert()"></select>
+      </div>
+      <div>
+        <label for="to-unit">To</label>
+        <select id="to-unit" onchange="convert()"></select>
+      </div>
+      <div>
+        <label>Result</label>
+        <input type="text" id="result" readonly>
+      </div>
+    </div>
+
+    <p id="formula" style="font-size: 0.85rem; color: var(--pico-muted-color);"></p>
+
+    <script>
+      var units = [
+        {% for u in units %}
+        {
+          name: "{{ u.name }}",
+          path: "{{ u.path }}",
+          dimension: "{{ u.dimension_name }}",
+          factor: {{ u.factor if u.factor is defined else 'null' }},
+          exponent: {{ u.exponent if u.exponent is defined else 'null' }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ];
+
+      function getScale(u) {
+        if (u.factor !== null) return u.factor;
+        if (u.exponent !== null) return Math.pow(10, u.exponent);
+        return 1.0;
+      }
+
+      function updateUnits() {
+        var dim = document.getElementById('dimension').value;
+        var filtered = units.filter(function(u) { return u.dimension === dim; });
+        var fromSel = document.getElementById('from-unit');
+        var toSel = document.getElementById('to-unit');
+        fromSel.innerHTML = '';
+        toSel.innerHTML = '';
+        filtered.forEach(function(u) {
+          var o1 = document.createElement('option');
+          o1.value = u.name;
+          o1.textContent = u.name;
+          fromSel.appendChild(o1);
+          var o2 = document.createElement('option');
+          o2.value = u.name;
+          o2.textContent = u.name;
+          toSel.appendChild(o2);
+        });
+        if (filtered.length > 1) toSel.selectedIndex = 1;
+        convert();
+      }
+
+      function findUnit(name) {
+        for (var i = 0; i < units.length; i++) {
+          if (units[i].name === name) return units[i];
+        }
+        return null;
+      }
+
+      function convert() {
+        var val = parseFloat(document.getElementById('from-value').value);
+        var fromName = document.getElementById('from-unit').value;
+        var toName = document.getElementById('to-unit').value;
+        var fromUnit = findUnit(fromName);
+        var toUnit = findUnit(toName);
+        var resultEl = document.getElementById('result');
+        var formulaEl = document.getElementById('formula');
+
+        if (!fromUnit || !toUnit || isNaN(val)) {
+          resultEl.value = '';
+          formulaEl.textContent = '';
+          return;
+        }
+
+        var fromScale = getScale(fromUnit);
+        var toScale = getScale(toUnit);
+        var result = val * fromScale / toScale;
+
+        resultEl.value = result.toPrecision(10).replace(/\.?0+$/, '');
+        formulaEl.textContent = val + ' ' + fromName + ' = ' + resultEl.value + ' ' + toName
+          + '  (1 ' + fromName + ' = ' + (fromScale / toScale).toPrecision(10).replace(/\.?0+$/, '') + ' ' + toName + ')';
+      }
+
+      updateUnits();
+    </script>
+  </main>
+</body>
+</html>
