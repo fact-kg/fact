@@ -1,3 +1,30 @@
 - is:
     type: astronomy/star_system
 - part: astronomy/location/milky_way
+- has:
+    sun:
+      type: astronomy/location/milky_way/solar_system/sun
+- has:
+    mercury:
+      type: astronomy/location/milky_way/solar_system/mercury
+- has:
+    venus:
+      type: astronomy/location/milky_way/solar_system/venus
+- has:
+    earth:
+      type: astronomy/location/milky_way/solar_system/earth
+- has:
+    mars:
+      type: astronomy/location/milky_way/solar_system/mars
+- has:
+    jupiter:
+      type: astronomy/location/milky_way/solar_system/jupiter
+- has:
+    saturn:
+      type: astronomy/location/milky_way/solar_system/saturn
+- has:
+    uranus:
+      type: astronomy/location/milky_way/solar_system/uranus
+- has:
+    neptune:
+      type: astronomy/location/milky_way/solar_system/neptune

@@ -4,3 +4,4 @@
       - astronomy/object:
           mass:
             value: 1.989e30
+- part: astronomy/location/milky_way/solar_system

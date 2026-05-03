@@ -52,9 +52,19 @@ def find_unit_for_property(kg, fact_info, prop_name, ROOTS):
 
 @router.get("/")
 def planet_compare(request: Request):
-    from pysrc.web.server import kg, ROOTS, list_children
+    from pysrc.web.server import kg, ROOTS
 
-    children = list_children(PLANETS_PATH)
+    solar_info = load_fact_info(kg, PLANETS_PATH, ROOTS)
+    children = []
+    if solar_info:
+        for attr, val in solar_info.get("has", {}).items():
+            t = val.get("type", "")
+            if not t or t in ("str", "num", "list"):
+                continue
+            child_info = load_fact_info(kg, t, ROOTS)
+            if child_info and "astronomy/planet" in child_info.get("type", []):
+                children.append({"name": attr, "path": t})
+
     items = []
     all_properties = set()
     first_info = None
