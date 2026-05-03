@@ -1,0 +1,6 @@
+- is:
+    type: physics/unit/mks/length
+- has:
+    factor:
+      type: num
+      value: 5.291772083e-11

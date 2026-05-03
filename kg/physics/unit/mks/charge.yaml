@@ -1,0 +1,12 @@
+- is:
+    type: physics/unit/mks
+    as:
+      - physics/unit/mks:
+          m:
+            value: 0
+          k:
+            value: 0
+          s:
+            value: 1
+          a:
+            value: 1

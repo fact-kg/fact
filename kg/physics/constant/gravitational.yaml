@@ -1,0 +1,16 @@
+- is:
+    type: physics/unit/mks
+    as:
+      - physics/unit/mks:
+          m:
+            value: 3
+          k:
+            value: -1
+          s:
+            value: -2
+          a:
+            value: 0
+- has:
+    factor:
+      type: num
+      value: 6.673e-11

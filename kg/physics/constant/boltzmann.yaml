@@ -1,0 +1,6 @@
+- is:
+    type: physics/unit/mks/energy
+- has:
+    factor:
+      type: num
+      value: 1.3806504e-23
