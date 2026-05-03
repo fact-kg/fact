@@ -100,9 +100,15 @@ def main():
 
     kg = Kg(roots, schema)
 
+    import time
+    t0 = time.perf_counter()
+
     if args.all:
         use_progress = not args.verbose and not args.debug
-        return check_all(kg, roots, use_progress)
+        result = check_all(kg, roots, use_progress)
+        elapsed = time.perf_counter() - t0
+        print(f"Time: {elapsed:.3f}s")
+        return result
 
     fact_name = args.name
     print(f"Checking fact '{fact_name}'")
@@ -112,7 +118,10 @@ def main():
         return 1
     print(f"The path exists: {fact_path}")
 
-    return check_one(kg, fact_name)
+    result = check_one(kg, fact_name)
+    elapsed = time.perf_counter() - t0
+    print(f"Time: {elapsed:.3f}s")
+    return result
 
 if __name__ == "__main__":
     import sys

@@ -16,3 +16,7 @@
           surface_type:
             value: terrestrial
 - part: astronomy/location/milky_way/solar_system
+- has:
+    wikipedia_url:
+      type: computer/sw/url
+      value: "https://en.wikipedia.org/wiki/Mars"

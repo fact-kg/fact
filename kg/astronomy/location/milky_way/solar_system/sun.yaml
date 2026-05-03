@@ -5,3 +5,7 @@
           mass:
             value: 1.989e30
 - part: astronomy/location/milky_way/solar_system
+- has:
+    wikipedia_url:
+      type: computer/sw/url
+      value: "https://en.wikipedia.org/wiki/Sun"
