@@ -42,6 +42,8 @@ def list_children(path):
         child_dir = root / path
         if child_dir.is_dir():
             for f in child_dir.iterdir():
+                if f.name.startswith("."):
+                    continue
                 if f.suffix == ".yaml":
                     children.add(path + "/" + f.stem)
                 elif f.is_dir():
@@ -53,6 +55,8 @@ def index(request: Request):
     paths = set()
     for root in ROOTS:
         for p in root.iterdir():
+            if p.name.startswith("."):
+                continue
             if p.is_dir() or p.suffix == ".yaml":
                 name = str(p.relative_to(root)).replace('\\', '/')
                 if p.suffix == ".yaml":
@@ -158,13 +162,6 @@ def get_graph(path: str, request: Request):
             nodes.append({"id": p, "label": p.rsplit("/", 1)[-1], "group": "part"})
             edges.append({"from": path, "to": p, "label": "part"})
             seen.add(p)
-
-    children = list_children(path)
-    for c in children:
-        if c["path"] not in seen:
-            nodes.append({"id": c["path"], "label": c["name"], "group": "child"})
-            edges.append({"from": path, "to": c["path"], "label": "child"})
-            seen.add(c["path"])
 
     if "application/json" in request.headers.get("accept", ""):
         return JSONResponse({"nodes": nodes, "edges": edges})
