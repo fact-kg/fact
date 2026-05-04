@@ -74,7 +74,7 @@ class Kg(KgIface):
         return found[0]
 
     @fact("app/org/igorlesik/fact/pysrc/kg_module/load")
-    def load(self, fact_name, force_reload = False) -> int:
+    def load(self, fact_name, force_reload=False, skip_schema_check=False) -> int:
         if self.is_loaded(fact_name) and not force_reload:
             return 0
         path = self.find_fact_file(fact_name)
@@ -82,9 +82,8 @@ class Kg(KgIface):
             return 1
         with open(path, "r", encoding="utf-8") as f:
             yaml_str = f.read()
-        # YAML array becomes the "def" (definition) list of tags
         self.data[fact_name] = { "def": yaml.load(yaml_str, Loader=_YamlLoader) }
-        if not self.validate_schema(self.data[fact_name]["def"]):
+        if not skip_schema_check and not self.validate_schema(self.data[fact_name]["def"]):
             return 1
         return 0
 

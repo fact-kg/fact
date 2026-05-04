@@ -11,9 +11,9 @@ from fact import Fact
 from fact_decorator import fact
 
 @fact("app/org/igorlesik/fact/pysrc/checker/check_one")
-def check_one(kg, fact_name):
+def check_one(kg, fact_name, skip_schema_check=False):
     """Check a single fact. Returns 0 on success."""
-    if 0 != kg.load(fact_name):
+    if 0 != kg.load(fact_name, skip_schema_check=skip_schema_check):
         logging.error("could not load '%s'", fact_name)
         return 1
     fact = Fact(kg, fact_name)
@@ -23,11 +23,25 @@ def check_one(kg, fact_name):
     return 0
 
 @fact("app/org/igorlesik/fact/pysrc/checker/check_all")
-def check_all(kg, roots, use_progress=False):
+def check_all(kg, roots, use_progress=False, new_only_ts=None):
     """Check all facts across all roots. Returns 0 if all pass."""
     failed = []
     passed = 0
     checked = 0
+    skipped = 0
+
+    def process_file(yaml_file, root):
+        nonlocal passed, skipped
+        fact_name = str(yaml_file.relative_to(root).with_suffix('')).replace('\\', '/')
+        skip_schema = False
+        if new_only_ts is not None:
+            if yaml_file.stat().st_mtime <= new_only_ts:
+                skip_schema = True
+                skipped += 1
+        if 0 != check_one(kg, fact_name, skip_schema_check=skip_schema):
+            failed.append(fact_name)
+        else:
+            passed += 1
 
     if use_progress:
         console = Console()
@@ -35,23 +49,19 @@ def check_all(kg, roots, use_progress=False):
         with status:
             for root in roots:
                 for yaml_file in root.rglob("*.yaml"):
-                    fact_name = str(yaml_file.relative_to(root).with_suffix('')).replace('\\', '/')
                     checked += 1
                     status.update(f"Checking facts... {checked}")
-                    if 0 != check_one(kg, fact_name):
-                        failed.append(fact_name)
-                    else:
-                        passed += 1
+                    process_file(yaml_file, root)
     else:
         for root in roots:
             for yaml_file in root.rglob("*.yaml"):
-                fact_name = str(yaml_file.relative_to(root).with_suffix('')).replace('\\', '/')
-                if 0 != check_one(kg, fact_name):
-                    failed.append(fact_name)
-                else:
-                    passed += 1
+                checked += 1
+                process_file(yaml_file, root)
 
-    print(f"\n{passed + len(failed)} checked, {passed} passed, {len(failed)} failed")
+    summary = f"\n{passed + len(failed)} checked, {passed} passed, {len(failed)} failed"
+    if new_only_ts is not None:
+        summary += f", {skipped} schema-skipped"
+    print(summary)
     if failed:
         for f in failed:
             print(f"  FAIL: {f}")
@@ -68,6 +78,8 @@ def main():
     parser.add_argument("--all", action="store_true", help="Check all facts in kg directory")
     parser.add_argument("--roots", default="kg",
         help="Comma-separated list of root directories (default: kg)")
+    parser.add_argument("--new-only", action="store_true",
+        help="Skip schema check for files unchanged since last successful run")
     parser.add_argument("--verbose", "-v", action="store_true", help="Show info messages")
     parser.add_argument("--debug", action="store_true", help="Show all debug messages")
     args = parser.parse_args()
@@ -120,12 +132,22 @@ def main():
                 size += deep_sizeof(item, seen)
         return size
 
+    last_check_file = project_dir / ".last_check"
+    new_only_ts = None
+    if args.new_only:
+        if last_check_file.exists():
+            new_only_ts = last_check_file.stat().st_mtime
+        else:
+            new_only_ts = 0
+
     if args.all:
         use_progress = not args.verbose and not args.debug
-        result = check_all(kg, roots, use_progress)
+        result = check_all(kg, roots, use_progress, new_only_ts=new_only_ts)
         elapsed = time.perf_counter() - t0
         mem = deep_sizeof(kg.data)
         print(f"Time: {elapsed:.3f}s, KG memory: {mem / 1048576:.1f} MB")
+        if result == 0:
+            last_check_file.touch()
         return result
 
     fact_name = args.name
