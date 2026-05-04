@@ -1,0 +1,6 @@
+- is:
+    type: computer/sw/lang/python/operator
+    as:
+      - computer/sw/lang/python/operator:
+          symbol:
+            value: "**"
