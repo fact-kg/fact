@@ -1,5 +1,6 @@
 import sys
 import math
+import operator
 from pathlib import Path
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
@@ -16,11 +17,33 @@ templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
 QUADRATIC_PATH = "math/algebra/real/singlevar/polynomial/quadratic"
 
-OPERATIONS = {
-    "math/algebra/operation/add": lambda a, b: a + b,
-    "math/algebra/operation/multiply": lambda a, b: a * b,
-    "math/algebra/operation/power": lambda a, b: a ** b,
+SYMBOL_TO_FN = {
+    "+": operator.add,
+    "-": operator.sub,
+    "*": operator.mul,
+    "/": operator.truediv,
+    "**": operator.pow,
 }
+
+_op_cache = {}
+
+
+def resolve_operation(op_path, kg, ROOTS):
+    if op_path in _op_cache:
+        return _op_cache[op_path]
+    info = load_fact_info(kg, op_path, ROOTS)
+    if info is None:
+        return None
+    impl_type = info.get("has", {}).get("python_impl", {}).get("type", "")
+    if not impl_type:
+        return None
+    impl_info = load_fact_info(kg, impl_type, ROOTS)
+    if impl_info is None:
+        return None
+    symbol = impl_info.get("val_as", {}).get("computer/sw/lang/python/operator", {}).get("symbol", "")
+    fn = SYMBOL_TO_FN.get(symbol)
+    _op_cache[op_path] = fn
+    return fn
 
 
 def load_fact_info(kg, path, ROOTS):
@@ -33,7 +56,7 @@ def load_fact_info(kg, path, ROOTS):
     return kg.get_fact(path).get("info", {})
 
 
-def evaluate(node, variables):
+def evaluate(node, variables, kg, ROOTS):
     if isinstance(node, str):
         if node in variables:
             return variables[node]
@@ -43,10 +66,10 @@ def evaluate(node, variables):
     if isinstance(node, dict):
         op_path = next(iter(node))
         operands = node[op_path]
-        op_fn = OPERATIONS.get(op_path)
+        op_fn = resolve_operation(op_path, kg, ROOTS)
         if op_fn is None:
             raise ValueError(f"Unknown operation: {op_path}")
-        vals = [evaluate(o, variables) for o in operands]
+        vals = [evaluate(o, variables, kg, ROOTS) for o in operands]
         return op_fn(vals[0], vals[1])
     raise ValueError(f"Cannot evaluate: {node}")
 
@@ -118,7 +141,7 @@ def polynomial_plot(request: Request):
         for i in range(n_points + 1):
             x = x_min + i * step
             try:
-                y = evaluate(expression_tree, {"x": x, "a": a, "b": b, "c": c})
+                y = evaluate(expression_tree, {"x": x, "a": a, "b": b, "c": c}, kg, ROOTS)
                 points.append({"x": round(x, 6), "y": round(y, 6)})
             except Exception:
                 pass

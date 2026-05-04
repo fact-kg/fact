@@ -1,6 +1,11 @@
 import logging
 import yaml
 import jsonschema
+
+try:
+    _YamlLoader = yaml.CSafeLoader
+except AttributeError:
+    _YamlLoader = yaml.SafeLoader
 from pathlib import Path
 from abc import ABC, abstractmethod
 from typing import Annotated, Dict, Any, List
@@ -78,7 +83,7 @@ class Kg(KgIface):
         with open(path, "r", encoding="utf-8") as f:
             yaml_str = f.read()
         # YAML array becomes the "def" (definition) list of tags
-        self.data[fact_name] = { "def": yaml.safe_load(yaml_str) }
+        self.data[fact_name] = { "def": yaml.load(yaml_str, Loader=_YamlLoader) }
         if not self.validate_schema(self.data[fact_name]["def"]):
             return 1
         return 0

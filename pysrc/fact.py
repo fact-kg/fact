@@ -23,6 +23,9 @@ class Fact:
 
         self.data = self.kg.get_fact(self.name)
 
+        if "def" not in self.data:
+            return 0
+
         self.data["info"] = {}
 
         result = self.construct_what_it_is()
@@ -38,6 +41,9 @@ class Fact:
             return result
 
         log.info("%s constructed: %s", self.name, self.data['info'])
+
+        # free parsed YAML tags, only constructed "info" is needed from now on
+        del self.data["def"]
 
         return 0
 

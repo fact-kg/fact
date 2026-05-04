@@ -125,7 +125,7 @@ def main():
         result = check_all(kg, roots, use_progress)
         elapsed = time.perf_counter() - t0
         mem = deep_sizeof(kg.data)
-        print(f"Time: {elapsed:.3f}s, KG memory: {mem / 1024:.1f} KB")
+        print(f"Time: {elapsed:.3f}s, KG memory: {mem / 1048576:.1f} MB")
         return result
 
     fact_name = args.name
@@ -139,7 +139,7 @@ def main():
     result = check_one(kg, fact_name)
     elapsed = time.perf_counter() - t0
     mem = sys.getsizeof(kg.data) + sum(sys.getsizeof(v) for v in kg.data.values())
-    print(f"Time: {elapsed:.3f}s, KG memory: {mem / 1024:.1f} KB")
+    print(f"Time: {elapsed:.3f}s, KG memory: {mem / 1048576:.1f} MB")
     return result
 
 if __name__ == "__main__":
