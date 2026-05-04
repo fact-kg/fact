@@ -1,5 +1,0 @@
-- is: switch
-- has:
-    description:
-      type: str
-      value: "connects accelerators"

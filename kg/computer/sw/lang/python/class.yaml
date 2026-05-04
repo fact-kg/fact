@@ -1,4 +1,0 @@
-- is: Python class
-- has:
-    name:
-      type: str
