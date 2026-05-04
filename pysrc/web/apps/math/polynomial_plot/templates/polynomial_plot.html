@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Polynomial Plot — Fact KG</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <script>
+    function toggleTheme() {
+      var h = document.documentElement;
+      var c = h.getAttribute('data-theme');
+      var n = c === 'dark' ? 'light' : c === 'light' ? 'dark' :
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark');
+      h.setAttribute('data-theme', n);
+      localStorage.setItem('theme', n);
+    }
+    (function() {
+      var s = localStorage.getItem('theme');
+      if (s) document.documentElement.setAttribute('data-theme', s);
+    })();
+  </script>
+  <style>
+    #plot {
+      width: 100%;
+      height: 500px;
+      border: 1px solid var(--pico-muted-border-color);
+      border-radius: var(--pico-border-radius);
+      background: var(--pico-background-color);
+    }
+    .root-marker { font-weight: bold; }
+    pre.expr-tree {
+      font-size: 0.8rem;
+      padding: 1em;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <header class="container">
+    <nav>
+      <ul><li><strong><a href="/">Fact KG</a></strong></li></ul>
+      <ul>
+        <li><a href="/fact/math/algebra/real/singlevar/polynomial/quadratic">Quadratic fact</a></li>
+        <li><a href="#" onclick="toggleTheme();return false">Toggle theme</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main class="container">
+    <h1>Polynomial Plot</h1>
+    <p><code>{{ expression_str }}</code></p>
+
+    <form method="get">
+      <div class="grid">
+        <div>
+          <label for="a">a</label>
+          <input type="number" name="a" id="a" value="{{ a }}" step="any">
+        </div>
+        <div>
+          <label for="b">b</label>
+          <input type="number" name="b" id="b" value="{{ b }}" step="any">
+        </div>
+        <div>
+          <label for="c">c</label>
+          <input type="number" name="c" id="c" value="{{ c }}" step="any">
+        </div>
+        <div>
+          <label for="xmin">x min</label>
+          <input type="number" name="xmin" id="xmin" value="{{ x_min }}" step="any">
+        </div>
+        <div>
+          <label for="xmax">x max</label>
+          <input type="number" name="xmax" id="xmax" value="{{ x_max }}" step="any">
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <button type="submit">Plot</button>
+        </div>
+      </div>
+    </form>
+
+    {% if roots %}
+    <p>Roots: {% for r in roots %}<span class="root-marker">x = {{ r }}</span>{% if not loop.last %}, {% endif %}{% endfor %}</p>
+    {% else %}
+    <p>No real roots</p>
+    {% endif %}
+
+    <canvas id="plot"></canvas>
+
+    <details>
+      <summary>Expression tree (from KG)</summary>
+      <pre class="expr-tree">{{ expression_yaml_str }}</pre>
+      <p style="font-size: 0.8rem;">Inputs:
+        {% for name, kind in inputs.items() %}
+          <b>{{ name }}</b> ({{ kind.rsplit('/', 1)[-1] }}){% if not loop.last %}, {% endif %}
+        {% endfor %}
+      </p>
+    </details>
+
+    <script>
+      var points = {{ points | tojson }};
+      var roots = {{ roots | tojson }};
+
+      function drawPlot() {
+        var canvas = document.getElementById('plot');
+        var ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        var rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+        var W = rect.width;
+        var H = rect.height;
+        var pad = 40;
+
+        if (points.length === 0) return;
+
+        var xs = points.map(function(p) { return p.x; });
+        var ys = points.map(function(p) { return p.y; });
+        var xMin = Math.min.apply(null, xs);
+        var xMax = Math.max.apply(null, xs);
+        var yMin = Math.min.apply(null, ys);
+        var yMax = Math.max.apply(null, ys);
+
+        if (yMax - yMin < 1e-10) { yMin -= 1; yMax += 1; }
+
+        var yPad = (yMax - yMin) * 0.05;
+        yMin -= yPad;
+        yMax += yPad;
+
+        function toCanvasX(x) { return pad + (x - xMin) / (xMax - xMin) * (W - 2 * pad); }
+        function toCanvasY(y) { return H - pad - (y - yMin) / (yMax - yMin) * (H - 2 * pad); }
+
+        var style = getComputedStyle(document.documentElement);
+        var textColor = style.getPropertyValue('--pico-color') || '#333';
+        var gridColor = style.getPropertyValue('--pico-muted-border-color') || '#ddd';
+
+        ctx.clearRect(0, 0, W, H);
+
+        ctx.strokeStyle = gridColor;
+        ctx.lineWidth = 0.5;
+        var nTicks = 8;
+        ctx.font = '11px sans-serif';
+        ctx.fillStyle = textColor;
+        for (var i = 0; i <= nTicks; i++) {
+          var xv = xMin + i * (xMax - xMin) / nTicks;
+          var cx = toCanvasX(xv);
+          ctx.beginPath(); ctx.moveTo(cx, pad); ctx.lineTo(cx, H - pad); ctx.stroke();
+          ctx.fillText(xv.toFixed(1), cx - 15, H - pad + 15);
+
+          var yv = yMin + i * (yMax - yMin) / nTicks;
+          var cy = toCanvasY(yv);
+          ctx.beginPath(); ctx.moveTo(pad, cy); ctx.lineTo(W - pad, cy); ctx.stroke();
+          ctx.fillText(yv.toFixed(1), 2, cy + 4);
+        }
+
+        if (yMin <= 0 && yMax >= 0) {
+          ctx.strokeStyle = textColor;
+          ctx.lineWidth = 1;
+          var zeroY = toCanvasY(0);
+          ctx.beginPath(); ctx.moveTo(pad, zeroY); ctx.lineTo(W - pad, zeroY); ctx.stroke();
+        }
+        if (xMin <= 0 && xMax >= 0) {
+          ctx.strokeStyle = textColor;
+          ctx.lineWidth = 1;
+          var zeroX = toCanvasX(0);
+          ctx.beginPath(); ctx.moveTo(zeroX, pad); ctx.lineTo(zeroX, H - pad); ctx.stroke();
+        }
+
+        ctx.strokeStyle = '#2196F3';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (var i = 0; i < points.length; i++) {
+          var cx = toCanvasX(points[i].x);
+          var cy = toCanvasY(points[i].y);
+          if (i === 0) ctx.moveTo(cx, cy);
+          else ctx.lineTo(cx, cy);
+        }
+        ctx.stroke();
+
+        ctx.fillStyle = '#F44336';
+        roots.forEach(function(r) {
+          var cx = toCanvasX(r);
+          var cy = toCanvasY(0);
+          ctx.beginPath();
+          ctx.arc(cx, cy, 5, 0, 2 * Math.PI);
+          ctx.fill();
+        });
+      }
+
+      drawPlot();
+      window.addEventListener('resize', drawPlot);
+    </script>
+  </main>
+</body>
+</html>

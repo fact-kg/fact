@@ -2,3 +2,4 @@ roots:
   - path: kg
   - path: kg2
   - path: ../fact_physics
+  - path: ../fact_math
