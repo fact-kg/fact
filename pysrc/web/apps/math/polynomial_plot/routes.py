@@ -73,6 +73,13 @@ def evaluate(node, variables, kg, ROOTS):
         return float(node)
     if isinstance(node, dict):
         op_path = next(iter(node))
+        if op_path == "math/expression/conditional":
+            branches = node[op_path]
+            cond = evaluate(branches["condition"], variables, kg, ROOTS)
+            if cond:
+                return evaluate(branches["then"], variables, kg, ROOTS)
+            else:
+                return evaluate(branches["else"], variables, kg, ROOTS)
         operands = node[op_path]
         op_fn = resolve_operation(op_path, kg, ROOTS)
         if op_fn is None:
