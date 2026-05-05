@@ -35,6 +35,9 @@
       padding: 1em;
       overflow-x: auto;
     }
+    .degree-tabs { display: flex; gap: 0.5em; margin-bottom: 1em; }
+    .degree-tabs a { padding: 0.4em 1em; border-radius: 4px; text-decoration: none; }
+    .degree-tabs a.active { background: var(--pico-primary); color: var(--pico-primary-inverse); }
   </style>
 </head>
 <body>
@@ -42,32 +45,34 @@
     <nav>
       <ul><li><strong><a href="/">Fact KG</a></strong></li></ul>
       <ul>
-        <li><a href="/fact/math/algebra/real/singlevar/polynomial/quadratic">Quadratic fact</a></li>
+        <li><a href="/fact/math/algebra/real/singlevar/polynomial">Polynomial facts</a></li>
         <li><a href="#" onclick="toggleTheme();return false">Toggle theme</a></li>
       </ul>
     </nav>
   </header>
   <main class="container">
     <h1>Polynomial Plot</h1>
+
+    <div class="degree-tabs">
+      {% for d in degrees %}
+      <a href="?degree={{ d }}" class="{% if d == degree %}active{% endif %}">{{ d | capitalize }}</a>
+      {% endfor %}
+    </div>
+
     <div id="formula-display" style="font-size: 1.3rem; margin-bottom: 1em;"></div>
     <script>
       katex.render({{ expression_latex | tojson }}, document.getElementById("formula-display"), {displayMode: true});
     </script>
 
     <form method="get">
+      <input type="hidden" name="degree" value="{{ degree }}">
       <div class="grid">
+        {% for name, val in coeffs.items() %}
         <div>
-          <label for="a">a</label>
-          <input type="number" name="a" id="a" value="{{ a }}" step="any">
+          <label for="{{ name }}">{{ name }}</label>
+          <input type="number" name="{{ name }}" id="{{ name }}" value="{{ val }}" step="any">
         </div>
-        <div>
-          <label for="b">b</label>
-          <input type="number" name="b" id="b" value="{{ b }}" step="any">
-        </div>
-        <div>
-          <label for="c">c</label>
-          <input type="number" name="c" id="c" value="{{ c }}" step="any">
-        </div>
+        {% endfor %}
         <div>
           <label for="xmin">x min</label>
           <input type="number" name="xmin" id="xmin" value="{{ x_min }}" step="any">

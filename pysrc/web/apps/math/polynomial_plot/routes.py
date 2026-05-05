@@ -9,13 +9,36 @@ from fastapi.templating import Jinja2Templates
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent.parent))
 
 import yaml
+import numpy as np
 from kg import Kg
 from fact import Fact
 
 router = APIRouter(prefix="/apps/math/polynomial_plot")
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
-QUADRATIC_PATH = "math/algebra/real/singlevar/polynomial/quadratic"
+POLYNOMIALS = {
+    "linear": {
+        "path": "math/algebra/real/singlevar/polynomial/linear",
+        "coeffs": ["a", "b"],
+        "defaults": {"a": "2", "b": "-1"},
+        "root_paths": ["math/algebra/real/singlevar/polynomial/linear/root"],
+    },
+    "quadratic": {
+        "path": "math/algebra/real/singlevar/polynomial/quadratic",
+        "coeffs": ["a", "b", "c"],
+        "defaults": {"a": "1", "b": "0", "c": "-1"},
+        "root_paths": [
+            "math/algebra/real/singlevar/polynomial/quadratic/root_plus",
+            "math/algebra/real/singlevar/polynomial/quadratic/root_minus",
+        ],
+    },
+    "cubic": {
+        "path": "math/algebra/real/singlevar/polynomial/cubic",
+        "coeffs": ["a", "b", "c", "d"],
+        "defaults": {"a": "1", "b": "0", "c": "-3", "d": "0"},
+        "root_paths": None,
+    },
+}
 
 SYMBOL_TO_FN = {
     "+": operator.add,
@@ -141,10 +164,6 @@ def to_latex(node, kg, ROOTS):
     return str(node)
 
 
-ROOT_PLUS_PATH = "math/algebra/real/singlevar/polynomial/quadratic/root_plus"
-ROOT_MINUS_PATH = "math/algebra/real/singlevar/polynomial/quadratic/root_minus"
-
-
 def check_undefined(info, variables, kg, ROOTS):
     has = info.get("has", {})
     for attr, val in has.items():
@@ -161,11 +180,10 @@ def check_undefined(info, variables, kg, ROOTS):
     return None
 
 
-def find_roots(a, b, c, kg, ROOTS):
+def find_roots_from_facts(root_paths, variables, kg, ROOTS):
     roots = []
     undefined_reason = None
-    variables = {"a": a, "b": b, "c": c}
-    for root_path in (ROOT_PLUS_PATH, ROOT_MINUS_PATH):
+    for root_path in root_paths:
         info = load_fact_info(kg, root_path, ROOTS)
         if info is None:
             continue
@@ -185,11 +203,28 @@ def find_roots(a, b, c, kg, ROOTS):
     return roots, undefined_reason
 
 
+def find_roots_numpy(coefficients):
+    if all(c == 0 for c in coefficients):
+        return [], "undefined_zero_polynomial"
+    while len(coefficients) > 1 and coefficients[0] == 0:
+        coefficients = coefficients[1:]
+    if len(coefficients) <= 1:
+        return [], None
+    all_roots = np.roots(coefficients)
+    real_roots = [float(r.real) for r in all_roots if abs(r.imag) < 1e-10]
+    return real_roots, None
+
+
 @router.get("/")
 def polynomial_plot(request: Request):
     from pysrc.web.server import kg, ROOTS
 
-    info = load_fact_info(kg, QUADRATIC_PATH, ROOTS)
+    degree = request.query_params.get("degree", "quadratic")
+    if degree not in POLYNOMIALS:
+        degree = "quadratic"
+    poly = POLYNOMIALS[degree]
+
+    info = load_fact_info(kg, poly["path"], ROOTS)
 
     expression_str = ""
     expression_yaml_str = ""
@@ -211,20 +246,29 @@ def polynomial_plot(request: Request):
             if t in ("math/variable", "math/constant"):
                 inputs[attr] = t
 
-    a = float(request.query_params.get("a", "1"))
-    b = float(request.query_params.get("b", "0"))
-    c = float(request.query_params.get("c", "-1"))
+    coeffs = {}
+    for name in poly["coeffs"]:
+        coeffs[name] = float(request.query_params.get(name, poly["defaults"][name]))
 
-    roots, undefined_reason = find_roots(a, b, c, kg, ROOTS)
+    if poly["root_paths"]:
+        roots, undefined_reason = find_roots_from_facts(poly["root_paths"], coeffs, kg, ROOTS)
+    else:
+        coeff_list = [coeffs[name] for name in poly["coeffs"]]
+        roots, undefined_reason = find_roots_numpy(coeff_list)
+
     roots = [round(r, 6) for r in sorted(roots)]
 
-    vertex_x = -b / (2 * a) if a != 0 else 0
+    coeff_values = list(coeffs.values())
+    if degree == "quadratic" and coeff_values[0] != 0:
+        center = -coeff_values[1] / (2 * coeff_values[0])
+    else:
+        center = 0
     if roots:
         x_center = (min(roots) + max(roots)) / 2
         spread = (max(roots) - min(roots)) * 1.5
         spread = max(spread, 2)
     else:
-        x_center = vertex_x
+        x_center = center
         spread = 10
     default_xmin = x_center - spread
     default_xmax = x_center + spread
@@ -238,8 +282,10 @@ def polynomial_plot(request: Request):
     if expression_tree:
         for i in range(n_points + 1):
             x = x_min + i * step
+            variables = {"x": x}
+            variables.update(coeffs)
             try:
-                y = evaluate(expression_tree, {"x": x, "a": a, "b": b, "c": c}, kg, ROOTS)
+                y = evaluate(expression_tree, variables, kg, ROOTS)
                 points.append({"x": round(x, 6), "y": round(y, 6)})
             except Exception:
                 pass
@@ -247,7 +293,7 @@ def polynomial_plot(request: Request):
     if "application/json" in request.headers.get("accept", ""):
         return JSONResponse({
             "expression": expression_str,
-            "a": a, "b": b, "c": c,
+            "coeffs": coeffs,
             "x_min": x_min, "x_max": x_max,
             "points": points,
             "roots": roots,
@@ -258,7 +304,9 @@ def polynomial_plot(request: Request):
         "expression_str": expression_str,
         "expression_yaml_str": expression_yaml_str,
         "expression_latex": expression_latex,
-        "a": a, "b": b, "c": c,
+        "degree": degree,
+        "degrees": list(POLYNOMIALS.keys()),
+        "coeffs": coeffs,
         "x_min": x_min, "x_max": x_max,
         "points": points,
         "roots": roots,
