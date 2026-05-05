@@ -80,6 +80,8 @@
 
     {% if roots %}
     <p>Roots: {% for r in roots %}<span class="root-marker">x = {{ r }}</span>{% if not loop.last %}, {% endif %}{% endfor %}</p>
+    {% elif undefined_reason %}
+    <p>Undefined: {{ undefined_reason.replace('_', ' ') }}</p>
     {% else %}
     <p>No real roots</p>
     {% endif %}

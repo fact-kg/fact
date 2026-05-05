@@ -23,6 +23,11 @@ SYMBOL_TO_FN = {
     "*": operator.mul,
     "/": operator.truediv,
     "**": operator.pow,
+    "==": operator.eq,
+    "<": operator.lt,
+    "&": operator.and_,
+    "neg": operator.neg,
+    "math.sqrt": math.sqrt,
 }
 
 _op_cache = {}
@@ -40,7 +45,10 @@ def resolve_operation(op_path, kg, ROOTS):
     impl_info = load_fact_info(kg, impl_type, ROOTS)
     if impl_info is None:
         return None
-    symbol = impl_info.get("val_as", {}).get("computer/sw/lang/python/operator", {}).get("symbol", "")
+    val_as = impl_info.get("val_as", {})
+    symbol = val_as.get("computer/sw/lang/python/operator", {}).get("symbol", "")
+    if not symbol:
+        symbol = val_as.get("computer/sw/lang/python/function", {}).get("name", "")
     fn = SYMBOL_TO_FN.get(symbol)
     _op_cache[op_path] = fn
     return fn
@@ -70,23 +78,54 @@ def evaluate(node, variables, kg, ROOTS):
         if op_fn is None:
             raise ValueError(f"Unknown operation: {op_path}")
         vals = [evaluate(o, variables, kg, ROOTS) for o in operands]
+        if len(vals) == 1:
+            return op_fn(vals[0])
         return op_fn(vals[0], vals[1])
     raise ValueError(f"Cannot evaluate: {node}")
 
 
-def find_roots(a, b, c):
-    if a == 0:
-        if b == 0:
-            return []
-        return [-c / b]
-    discriminant = b * b - 4 * a * c
-    if discriminant < 0:
-        return []
-    elif discriminant == 0:
-        return [-b / (2 * a)]
-    else:
-        sq = math.sqrt(discriminant)
-        return [(-b + sq) / (2 * a), (-b - sq) / (2 * a)]
+ROOT_PLUS_PATH = "math/algebra/real/singlevar/polynomial/quadratic/root_plus"
+ROOT_MINUS_PATH = "math/algebra/real/singlevar/polynomial/quadratic/root_minus"
+
+
+def check_undefined(info, variables, kg, ROOTS):
+    has = info.get("has", {})
+    for attr, val in has.items():
+        if val.get("type") == "math/function/domain/undefined":
+            constraint_yaml = val.get("val", "")
+            if constraint_yaml:
+                tree = yaml.safe_load(constraint_yaml)
+                try:
+                    result = evaluate(tree, variables, kg, ROOTS)
+                    if result:
+                        return attr
+                except Exception:
+                    pass
+    return None
+
+
+def find_roots(a, b, c, kg, ROOTS):
+    roots = []
+    undefined_reason = None
+    variables = {"a": a, "b": b, "c": c}
+    for root_path in (ROOT_PLUS_PATH, ROOT_MINUS_PATH):
+        info = load_fact_info(kg, root_path, ROOTS)
+        if info is None:
+            continue
+        reason = check_undefined(info, variables, kg, ROOTS)
+        if reason:
+            undefined_reason = reason
+            continue
+        expr_yaml = info.get("has", {}).get("expression_yaml", {}).get("val", "")
+        if not expr_yaml:
+            continue
+        tree = yaml.safe_load(expr_yaml)
+        try:
+            val = evaluate(tree, variables, kg, ROOTS)
+            roots.append(val)
+        except Exception:
+            pass
+    return roots, undefined_reason
 
 
 @router.get("/")
@@ -117,7 +156,7 @@ def polynomial_plot(request: Request):
     b = float(request.query_params.get("b", "0"))
     c = float(request.query_params.get("c", "-1"))
 
-    roots = find_roots(a, b, c)
+    roots, undefined_reason = find_roots(a, b, c, kg, ROOTS)
     roots = [round(r, 6) for r in sorted(roots)]
 
     vertex_x = -b / (2 * a) if a != 0 else 0
@@ -153,6 +192,7 @@ def polynomial_plot(request: Request):
             "x_min": x_min, "x_max": x_max,
             "points": points,
             "roots": roots,
+            "undefined_reason": undefined_reason,
         })
 
     return templates.TemplateResponse(request, "polynomial_plot.html", {
@@ -162,5 +202,6 @@ def polynomial_plot(request: Request):
         "x_min": x_min, "x_max": x_max,
         "points": points,
         "roots": roots,
+        "undefined_reason": undefined_reason,
         "inputs": inputs,
     })
