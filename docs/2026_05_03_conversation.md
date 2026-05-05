@@ -157,3 +157,122 @@ a roots formula expressed as facts in the future.
 
 Replaced shallow `sys.getsizeof` with recursive `deep_sizeof` that walks nested
 dicts/lists/sets. 249 facts use ~1.2 MB of KG memory.
+
+---
+
+# Session Notes — May 3-4, 2026 (continued)
+
+## Work Done
+
+### 7. Unit converter web app
+
+Created `/apps/physics/unit_converter/` with dimension selector, from/to unit
+dropdowns, live JS conversion using factor/exponent from facts.
+
+### 8. Memory optimization — delete `def` after construction
+
+`fact.py` now deletes `self.data["def"]` after successful construction. Memory
+dropped from 1.2 MB to 0.5 MB. Added `"def" not in self.data` guard in
+`construct()` to skip re-construction when `def` is already freed.
+`force_reload` still works — it repopulates `def` from disk before constructing.
+
+### 9. CSafeLoader with fallback
+
+`kg.py` now uses `yaml.CSafeLoader` (C extension, 10-50x faster) with fallback
+to `yaml.SafeLoader` if not available.
+
+### 10. `--new-only` flag for check.py
+
+Skips schema validation for files unchanged since last successful run. Uses
+`.last_check` file timestamp. `check.bat` passes `%*` to forward arguments.
+
+### 11. Python operator facts and fact-driven evaluation
+
+Replaced hardcoded `OPERATIONS` dict in polynomial plot with fact-driven
+resolution: `math/algebra/operation/add` → follows `python_impl` reference →
+`computer/sw/lang/python/operator/add` → reads `symbol: "+"` → maps to
+`operator.add`. The `SYMBOL_TO_FN` dict is the irreducible code layer.
+
+### 12. New math operations
+
+Created: `subtract`, `divide`, `negate` (arity 1), `sqrt` (arity 1),
+`equal`, `less_than`, `and`. Plus corresponding Python operator/function facts.
+
+### 13. Domain restrictions — `math/function/domain/undefined`
+
+Facts can declare conditions where they're undefined:
+
+```yaml
+- has:
+    undefined_no_real_roots:
+      type: math/function/domain/undefined
+      value: |
+        math/algebra/operation/less_than:
+          - discriminant expression...
+          - 0
+```
+
+The evaluator checks all undefined constraints before computing. Returns the
+specific constraint name that triggered ("undefined no equation", "undefined
+no real roots").
+
+### 14. Quadratic root formulas as facts
+
+`root_plus.yaml` and `root_minus.yaml` — full quadratic formula with domain
+restrictions and conditional for the linear case (`a==0`).
+
+### 15. Conditional expressions — `math/expression/conditional`
+
+Ternary expression node with `condition`, `then`, `else` branches. Evaluator
+short-circuits (only evaluates the taken branch). Handles `a==0` linear case
+inside the expression tree.
+
+### 16. LaTeX rendering from expression trees
+
+Added `to_latex()` tree walker that converts expression trees to LaTeX strings.
+KaTeX (CDN) renders them in the browser. Same tree produces both numerical
+computation and mathematical notation — proving expressions are facts, not code.
+
+---
+
+## Design Decisions
+
+### Boolean operations return {0, 1}
+
+**Decision:** Comparison and logical operations return integers 0 and 1, not
+booleans. Bitwise `&` used for logical AND since `operator.and_` works on
+0/1 integers.
+
+**Rationale:** Keeps everything in one evaluation pipeline. No special boolean
+type needed. Comparisons can participate in arithmetic.
+
+### Conditional is ternary, always returns a value
+
+**Decision:** `math/expression/conditional` requires `condition`, `then`, and
+`else` — all mandatory. It's an expression (returns a value), not a statement.
+
+**Rationale:** Expression trees must be composable. An if-without-else doesn't
+produce a value and can't be a subtree. Domain restrictions handle the "no
+answer" case separately.
+
+**Parked:** May need `let`/`where` constructs later for temporary variables
+inside branches.
+
+### Domain restrictions vs conditional
+
+**Decision:** Two separate mechanisms:
+- `math/function/domain/undefined` — function has no answer (pre-check, skips
+  evaluation entirely)
+- `math/expression/conditional` — function has different formulas for different
+  cases (inside the expression tree)
+
+### LaTeX rendering from facts
+
+Operation-to-LaTeX mapping is in Python code (`OP_TO_LATEX` dict). Could be
+moved to facts (like `python_impl` → `latex_impl`) but parked for now.
+
+### N-degree polynomials — parked
+
+Need indexed sum concept (`math/expression/sum` with index variable and range)
+for general n-degree. For now, each degree gets its own explicit fact file.
+Linear and cubic are next.

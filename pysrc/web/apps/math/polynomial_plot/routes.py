@@ -91,21 +91,29 @@ def evaluate(node, variables, kg, ROOTS):
     raise ValueError(f"Cannot evaluate: {node}")
 
 
-OP_TO_LATEX = {
-    "math/algebra/operation/add": ("+", "infix"),
-    "math/algebra/operation/subtract": ("-", "infix"),
-    "math/algebra/operation/multiply": (r"\cdot ", "infix"),
-    "math/algebra/operation/divide": (None, "frac"),
-    "math/algebra/operation/power": (None, "power"),
-    "math/algebra/operation/sqrt": (None, "sqrt"),
-    "math/algebra/operation/negate": (None, "negate"),
-    "math/algebra/operation/equal": ("=", "infix"),
-    "math/algebra/operation/less_than": ("<", "infix"),
-    "math/algebra/operation/and": (r"\land ", "infix"),
-}
+_latex_cache = {}
 
 
-def to_latex(node):
+def resolve_latex(op_path, kg, ROOTS):
+    if op_path in _latex_cache:
+        return _latex_cache[op_path]
+    info = load_fact_info(kg, op_path, ROOTS)
+    if info is None:
+        return None, "infix"
+    impl_type = info.get("has", {}).get("latex_impl", {}).get("type", "")
+    if not impl_type:
+        return None, "infix"
+    impl_info = load_fact_info(kg, impl_type, ROOTS)
+    if impl_info is None:
+        return None, "infix"
+    val_as = impl_info.get("val_as", {}).get("computer/sw/lang/latex/operator", {})
+    symbol = val_as.get("symbol", "")
+    style = val_as.get("style", "infix")
+    _latex_cache[op_path] = (symbol, style)
+    return symbol, style
+
+
+def to_latex(node, kg, ROOTS):
     if isinstance(node, str):
         return node
     if isinstance(node, (int, float)):
@@ -114,14 +122,13 @@ def to_latex(node):
         op_path = next(iter(node))
         if op_path == "math/expression/conditional":
             branches = node[op_path]
-            cond = to_latex(branches["condition"])
-            then = to_latex(branches["then"])
-            els = to_latex(branches["else"])
+            cond = to_latex(branches["condition"], kg, ROOTS)
+            then = to_latex(branches["then"], kg, ROOTS)
+            els = to_latex(branches["else"], kg, ROOTS)
             return r"\begin{cases} " + then + r" & \text{if } " + cond + r" \\ " + els + r" & \text{otherwise} \end{cases}"
         operands = node[op_path]
-        info = OP_TO_LATEX.get(op_path, (op_path, "infix"))
-        symbol, style = info
-        parts = [to_latex(o) for o in operands]
+        symbol, style = resolve_latex(op_path, kg, ROOTS)
+        parts = [to_latex(o, kg, ROOTS) for o in operands]
         if style == "frac":
             return r"\frac{" + parts[0] + "}{" + parts[1] + "}"
         if style == "power":
@@ -198,7 +205,7 @@ def polynomial_plot(request: Request):
         expression_yaml_str = expr_yaml_info.get("val", "")
         if expression_yaml_str:
             expression_tree = yaml.safe_load(expression_yaml_str)
-            expression_latex = "f(x) = " + to_latex(expression_tree)
+            expression_latex = "f(x) = " + to_latex(expression_tree, kg, ROOTS)
         for attr, val in has.items():
             t = val.get("type", "")
             if t in ("math/variable", "math/constant"):
