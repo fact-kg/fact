@@ -91,6 +91,49 @@ def evaluate(node, variables, kg, ROOTS):
     raise ValueError(f"Cannot evaluate: {node}")
 
 
+OP_TO_LATEX = {
+    "math/algebra/operation/add": ("+", "infix"),
+    "math/algebra/operation/subtract": ("-", "infix"),
+    "math/algebra/operation/multiply": (r"\cdot ", "infix"),
+    "math/algebra/operation/divide": (None, "frac"),
+    "math/algebra/operation/power": (None, "power"),
+    "math/algebra/operation/sqrt": (None, "sqrt"),
+    "math/algebra/operation/negate": (None, "negate"),
+    "math/algebra/operation/equal": ("=", "infix"),
+    "math/algebra/operation/less_than": ("<", "infix"),
+    "math/algebra/operation/and": (r"\land ", "infix"),
+}
+
+
+def to_latex(node):
+    if isinstance(node, str):
+        return node
+    if isinstance(node, (int, float)):
+        return str(node)
+    if isinstance(node, dict):
+        op_path = next(iter(node))
+        if op_path == "math/expression/conditional":
+            branches = node[op_path]
+            cond = to_latex(branches["condition"])
+            then = to_latex(branches["then"])
+            els = to_latex(branches["else"])
+            return r"\begin{cases} " + then + r" & \text{if } " + cond + r" \\ " + els + r" & \text{otherwise} \end{cases}"
+        operands = node[op_path]
+        info = OP_TO_LATEX.get(op_path, (op_path, "infix"))
+        symbol, style = info
+        parts = [to_latex(o) for o in operands]
+        if style == "frac":
+            return r"\frac{" + parts[0] + "}{" + parts[1] + "}"
+        if style == "power":
+            return "{" + parts[0] + "}^{" + parts[1] + "}"
+        if style == "sqrt":
+            return r"\sqrt{" + parts[0] + "}"
+        if style == "negate":
+            return "-" + parts[0]
+        return parts[0] + " " + symbol + " " + parts[1]
+    return str(node)
+
+
 ROOT_PLUS_PATH = "math/algebra/real/singlevar/polynomial/quadratic/root_plus"
 ROOT_MINUS_PATH = "math/algebra/real/singlevar/polynomial/quadratic/root_minus"
 
@@ -143,6 +186,7 @@ def polynomial_plot(request: Request):
 
     expression_str = ""
     expression_yaml_str = ""
+    expression_latex = ""
     expression_tree = None
     inputs = {}
 
@@ -154,6 +198,7 @@ def polynomial_plot(request: Request):
         expression_yaml_str = expr_yaml_info.get("val", "")
         if expression_yaml_str:
             expression_tree = yaml.safe_load(expression_yaml_str)
+            expression_latex = "f(x) = " + to_latex(expression_tree)
         for attr, val in has.items():
             t = val.get("type", "")
             if t in ("math/variable", "math/constant"):
@@ -205,6 +250,7 @@ def polynomial_plot(request: Request):
     return templates.TemplateResponse(request, "polynomial_plot.html", {
         "expression_str": expression_str,
         "expression_yaml_str": expression_yaml_str,
+        "expression_latex": expression_latex,
         "a": a, "b": b, "c": c,
         "x_min": x_min, "x_max": x_max,
         "points": points,

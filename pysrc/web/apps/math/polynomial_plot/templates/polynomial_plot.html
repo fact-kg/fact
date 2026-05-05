@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Polynomial Plot — Fact KG</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.js"></script>
   <script>
     function toggleTheme() {
       var h = document.documentElement;
@@ -47,7 +49,10 @@
   </header>
   <main class="container">
     <h1>Polynomial Plot</h1>
-    <p><code>{{ expression_str }}</code></p>
+    <div id="formula-display" style="font-size: 1.3rem; margin-bottom: 1em;"></div>
+    <script>
+      katex.render({{ expression_latex | tojson }}, document.getElementById("formula-display"), {displayMode: true});
+    </script>
 
     <form method="get">
       <div class="grid">
