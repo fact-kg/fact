@@ -271,8 +271,113 @@ inside branches.
 Operation-to-LaTeX mapping is in Python code (`OP_TO_LATEX` dict). Could be
 moved to facts (like `python_impl` → `latex_impl`) but parked for now.
 
-### N-degree polynomials — parked
+### N-degree polynomials — implemented
 
-Need indexed sum concept (`math/expression/sum` with index variable and range)
-for general n-degree. For now, each degree gets its own explicit fact file.
-Linear and cubic are next.
+Indexed sum concept implemented. See below.
+
+---
+
+# Session Notes — May 5, 2026
+
+## Work Done
+
+### 1. LaTeX rendering from facts (`latex_impl`)
+
+Moved LaTeX rendering from hardcoded `OP_TO_LATEX` dict to fact-driven resolution.
+Each math operation now has `latex_impl` referencing a `computer/sw/lang/latex/operator/`
+fact with `symbol` and `style` properties.
+
+Created `computer/sw/lang/latex/operator.yaml` base type and 11 operator facts
+(add, subtract, multiply, divide, power, sqrt, negate, equal, less_than, and).
+
+Styles: `infix` (a + b), `frac` (\frac{a}{b}), `power` (a^{b}), `sqrt` (\sqrt{a}),
+`negate` (-a).
+
+### 2. Linear and cubic polynomial facts
+
+Created `math/algebra/real/singlevar/polynomial/linear.yaml` with expression tree
+and `linear/root.yaml` with domain restriction (`a == 0` → undefined).
+
+Created `math/algebra/real/singlevar/polynomial/cubic.yaml` with expression tree.
+Roots use `numpy.roots` (no closed-form fact yet).
+
+### 3. Polynomial degree selector in app
+
+App now has tabs: Linear, Quadratic, Cubic, N-degree. Each loads its expression
+from the KG. Linear and quadratic use fact-based root formulas, cubic and n-degree
+use `numpy.roots`.
+
+### 4. Indexed expressions — `math/expression/indexed`
+
+New concept for iterating with an index variable over a range. Base hierarchy:
+
+```
+math/expression/indexed.yaml          — base concept
+math/expression/indexed/index.yaml    — iteration variable (name, from, to)
+math/expression/indexed/sum.yaml      — indexed sum (has accumulator, body)
+math/expression/indexed/element_at.yaml — access list element by position
+math/algebra/expression/indexed/sum.yaml — algebra sum (accumulator = add)
+```
+
+In `expression_yaml`, the indexed sum uses named keys (like `conditional`):
+
+```yaml
+math/algebra/expression/indexed/sum:
+  index: i
+  from: 0
+  to_length: coefficients
+  body:
+    math/algebra/operation/multiply:
+      - math/expression/indexed/element_at:
+          collection: coefficients
+          at: i
+      - math/algebra/operation/power:
+          - x
+          - i
+```
+
+### 5. N-degree polynomial
+
+`math/algebra/real/singlevar/polynomial/n_degree.yaml` — uses indexed sum to express
+`f(x) = Σ(i=0..n) coefficients[i] * x^i`. One compact tree works for any degree.
+
+Coefficients provided as comma-separated list. Order: `a₀, a₁, a₂, ...` (constant
+term first). Reversed for `numpy.roots` which expects highest degree first.
+
+LaTeX renders as `\sum_{i=0}^{...} coefficients_i \cdot x^i`.
+
+Verified against `numpy.polyval` — expression tree evaluation matches exactly.
+
+---
+
+## Design Decisions
+
+### Two kinds of expression nodes
+
+**Decision:** Expression trees have two node types:
+1. **Operations** — positional operands as list (`[a, b]`). Examples: add, multiply, power.
+2. **Structural nodes** — named keys as dict (`{index:, from:, body:}`). Examples:
+   conditional, indexed/sum, indexed/element_at.
+
+**Rationale:** Operations are pure computation — order of operands matters but they're
+uniform. Structural nodes control flow — they need named parts because the parts have
+different roles (condition vs body, index vs range).
+
+### Indexed sum accumulator from facts
+
+**Decision:** `math/expression/indexed/sum` has `accumulator: type: math/operation`.
+The algebra-specific `math/algebra/expression/indexed/sum` sets it to
+`math/algebra/operation/add`. Future `math/linalg/expression/indexed/sum` could use
+a different add operation.
+
+**Current limitation:** The evaluator hardcodes `result = 0` and `+` instead of
+loading the accumulator operation from the fact. To be made fully fact-driven later
+(needs identity element concept — 0 for add, 1 for multiply).
+
+### List as input type
+
+**Decision:** `coefficients: type: list` declares a list input. The checker doesn't
+validate list contents. The evaluator receives the list through `variables` dict.
+
+**Current state:** Informational — tells humans/LLMs this input is a list, but not
+enforced by the system.
