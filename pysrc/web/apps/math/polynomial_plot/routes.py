@@ -38,6 +38,12 @@ POLYNOMIALS = {
         "defaults": {"a": "1", "b": "0", "c": "-3", "d": "0"},
         "root_paths": None,
     },
+    "n-degree": {
+        "path": "math/algebra/real/singlevar/polynomial/n_degree",
+        "coeffs_list": True,
+        "defaults_list": "1, 0, -3, 0, 1",
+        "root_paths": None,
+    },
 }
 
 SYMBOL_TO_FN = {
@@ -103,6 +109,27 @@ def evaluate(node, variables, kg, ROOTS):
                 return evaluate(branches["then"], variables, kg, ROOTS)
             else:
                 return evaluate(branches["else"], variables, kg, ROOTS)
+        if op_path == "math/algebra/expression/indexed/sum":
+            node_data = node[op_path]
+            index_name = node_data["index"]
+            from_val = int(node_data["from"])
+            to_length_key = node_data.get("to_length")
+            if to_length_key:
+                to_val = len(variables[to_length_key]) - 1
+            else:
+                to_val = int(node_data["to"])
+            body = node_data["body"]
+            result = 0
+            for i in range(from_val, to_val + 1):
+                variables[index_name] = i
+                result = result + evaluate(body, variables, kg, ROOTS)
+            del variables[index_name]
+            return result
+        if op_path == "math/expression/indexed/element_at":
+            node_data = node[op_path]
+            collection = variables[node_data["collection"]]
+            idx = int(variables[node_data["at"]])
+            return collection[idx]
         operands = node[op_path]
         op_fn = resolve_operation(op_path, kg, ROOTS)
         if op_fn is None:
@@ -149,6 +176,20 @@ def to_latex(node, kg, ROOTS):
             then = to_latex(branches["then"], kg, ROOTS)
             els = to_latex(branches["else"], kg, ROOTS)
             return r"\begin{cases} " + then + r" & \text{if } " + cond + r" \\ " + els + r" & \text{otherwise} \end{cases}"
+        if op_path == "math/algebra/expression/indexed/sum":
+            node_data = node[op_path]
+            idx = node_data["index"]
+            from_val = str(node_data["from"])
+            to_key = node_data.get("to_length")
+            if to_key:
+                to_str = r"\text{len}(" + to_key + ") - 1"
+            else:
+                to_str = str(node_data["to"])
+            body = to_latex(node_data["body"], kg, ROOTS)
+            return r"\sum_{" + idx + "=" + from_val + "}^{" + to_str + "} " + body
+        if op_path == "math/expression/indexed/element_at":
+            node_data = node[op_path]
+            return node_data["collection"] + "_{" + node_data["at"] + "}"
         operands = node[op_path]
         symbol, style = resolve_latex(op_path, kg, ROOTS)
         parts = [to_latex(o, kg, ROOTS) for o in operands]
@@ -247,20 +288,29 @@ def polynomial_plot(request: Request):
                 inputs[attr] = t
 
     coeffs = {}
-    for name in poly["coeffs"]:
-        coeffs[name] = float(request.query_params.get(name, poly["defaults"][name]))
+    coeffs_list_str = ""
+    if poly.get("coeffs_list"):
+        coeffs_list_str = request.query_params.get("coefficients", poly["defaults_list"])
+        coeff_list = [float(c.strip()) for c in coeffs_list_str.split(",")]
+        coeffs = {"coefficients": coeff_list}
+    else:
+        for name in poly["coeffs"]:
+            coeffs[name] = float(request.query_params.get(name, poly["defaults"][name]))
+        coeff_list = [coeffs[name] for name in poly["coeffs"]]
 
     if poly["root_paths"]:
         roots, undefined_reason = find_roots_from_facts(poly["root_paths"], coeffs, kg, ROOTS)
     else:
-        coeff_list = [coeffs[name] for name in poly["coeffs"]]
-        roots, undefined_reason = find_roots_numpy(coeff_list)
+        if poly.get("coeffs_list"):
+            numpy_coeffs = list(reversed(coeff_list))
+        else:
+            numpy_coeffs = coeff_list
+        roots, undefined_reason = find_roots_numpy(numpy_coeffs)
 
     roots = [round(r, 6) for r in sorted(roots)]
 
-    coeff_values = list(coeffs.values())
-    if degree == "quadratic" and coeff_values[0] != 0:
-        center = -coeff_values[1] / (2 * coeff_values[0])
+    if degree == "quadratic" and coeff_list[0] != 0:
+        center = -coeff_list[1] / (2 * coeff_list[0])
     else:
         center = 0
     if roots:
@@ -286,6 +336,8 @@ def polynomial_plot(request: Request):
             variables.update(coeffs)
             try:
                 y = evaluate(expression_tree, variables, kg, ROOTS)
+                #np_y = np.polyval(list(reversed(coeff_list)), x)
+                #print(f"  x={x:.2f} tree_y={y:.6f} np_y={np_y:.6f}")
                 points.append({"x": round(x, 6), "y": round(y, 6)})
             except Exception:
                 pass
@@ -307,6 +359,8 @@ def polynomial_plot(request: Request):
         "degree": degree,
         "degrees": list(POLYNOMIALS.keys()),
         "coeffs": coeffs,
+        "coeffs_list": poly.get("coeffs_list", False),
+        "coeffs_list_str": coeffs_list_str,
         "x_min": x_min, "x_max": x_max,
         "points": points,
         "roots": roots,

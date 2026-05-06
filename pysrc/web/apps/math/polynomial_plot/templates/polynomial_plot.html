@@ -67,12 +67,19 @@
     <form method="get">
       <input type="hidden" name="degree" value="{{ degree }}">
       <div class="grid">
+        {% if coeffs_list %}
+        <div style="grid-column: span 3;">
+          <label for="coefficients">Coefficients (a₀, a₁, a₂, ...)</label>
+          <input type="text" name="coefficients" id="coefficients" value="{{ coeffs_list_str }}">
+        </div>
+        {% else %}
         {% for name, val in coeffs.items() %}
         <div>
           <label for="{{ name }}">{{ name }}</label>
           <input type="number" name="{{ name }}" id="{{ name }}" value="{{ val }}" step="any">
         </div>
         {% endfor %}
+        {% endif %}
         <div>
           <label for="xmin">x min</label>
           <input type="number" name="xmin" id="xmin" value="{{ x_min }}" step="any">
