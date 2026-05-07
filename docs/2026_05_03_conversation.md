@@ -381,3 +381,83 @@ validate list contents. The evaluator receives the list through `variables` dict
 
 **Current state:** Informational — tells humans/LLMs this input is a list, but not
 enforced by the system.
+
+---
+
+## Fact KG vs Traditional Knowledge Graphs
+
+### Where traditional KGs (Neo4j, RDF/SPARQL, Wikidata) fail
+
+Based on research (Hogan et al. 2021, Noy et al. 2019, Suchanek & Weikum 2023):
+
+1. **No computation semantics** — KGs store `F = m * a` as a string, can't evaluate it
+2. **Triple rigidity** — binary relations only, n-ary requires awkward reification
+3. **Variable-length structures** — lists, matrices need nested rdf:first/rdf:rest chains
+4. **Procedural knowledge** — algorithms, workflows, conditionals don't fit
+5. **Static snapshots** — describe "what is", not "how" or "when"
+
+### What our system already handles
+
+| KG limitation | Our answer |
+|---|---|
+| Can't execute formulas | `expression_yaml` trees evaluate numerically |
+| No computation binding | `python_impl`, `latex_impl` — facts produce code and notation |
+| Variable-length structures | Indexed sum, native YAML lists |
+| No control flow | `conditional`, domain restrictions in expression trees |
+| Binary relations only | `has` with nested `as` — n-ary naturally |
+| Static data only | Expression trees describe process, not just state |
+
+### Potential application areas
+
+1. **Scientific formulas database** — evaluable, renderable, verifiable expression
+   trees with unit types. Not just storing formulas (MathML) but computing with them.
+   Currently working on this.
+
+2. **Algorithms as facts** — sorting, searching, graph algorithms expressed as
+   indexed operations with conditionals. No KG can represent executable algorithms.
+   Next planned area after physics formulas.
+
+3. **Cross-domain reasoning** — polynomial roots connect math operations → Python
+   operators → LaTeX rendering → physics units. Four domains in one evaluation chain.
+   KGs separate computation from data; our system unifies them.
+
+4. **Fact verification from papers** — load a scientific paper, extract claims, match
+   against the KG. The "unknown" category drives KG growth. Needs LLM API access.
+
+### Core positioning
+
+Traditional KGs are passive data stores. Our system is active — the knowledge
+executes. The tagline: **"Knowledge graphs that compute."**
+
+---
+
+## What Emerges From a Large Executable Knowledge Graph?
+
+Open question for further thinking. If the KG grows to millions of verified,
+structured, executable facts:
+
+1. **Implicit knowledge** — derivable facts nobody explicitly wrote. `F = ma` and
+   `a = v/t` together imply `F = mv/t`. Expression tree substitution could discover
+   these automatically. The implicit knowledge surface grows combinatorially.
+
+2. **Contradictions become visible** — at large scale, two different derivation paths
+   producing different values for the same quantity reveals gaps in understanding.
+   Not bugs — signals.
+
+3. **Domain boundaries dissolve** — math → computer science → physics → chemistry
+   all connected through shared operations, units, and expression trees. Knowledge
+   becomes a unified executable web rather than isolated silos.
+
+4. **Better substrate for teaching** — structural relationships without pedagogical
+   bias. Any reasoner (LLM, human) can generate explanations at any level from
+   the same verified facts.
+
+5. **Not intelligence, but a substrate for thinking** — the KG doesn't "know"
+   anything. But it contains verified relationships that make reasoning more reliable,
+   whether the reasoner is human or machine. A sufficiently large executable KG
+   is a shared foundation that any intelligence can build on.
+
+Comparison with LLMs: an LLM develops something resembling reasoning from
+statistical patterns in text. An executable KG develops something resembling
+understanding from verified structural relationships. The two are complementary —
+the KG grounds the LLM, the LLM fills gaps in the KG.
