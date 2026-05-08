@@ -232,7 +232,11 @@ def find_roots_from_facts(root_paths, variables, kg, ROOTS):
         if reason:
             undefined_reason = reason
             continue
-        expr_yaml = info.get("has", {}).get("expression_yaml", {}).get("val", "")
+        expr_yaml = ""
+        for attr, val in info.get("has", {}).items():
+            if val.get("type") == "math/expression":
+                expr_yaml = val.get("val_as", {}).get("math/expression", {}).get("expression_yaml", "")
+                break
         if not expr_yaml:
             continue
         tree = yaml.safe_load(expr_yaml)
@@ -275,13 +279,16 @@ def polynomial_plot(request: Request):
 
     if info:
         has = info.get("has", {})
-        expr_str_info = has.get("expression_str", {})
-        expression_str = expr_str_info.get("val", "")
-        expr_yaml_info = has.get("expression_yaml", {})
-        expression_yaml_str = expr_yaml_info.get("val", "")
-        if expression_yaml_str:
-            expression_tree = yaml.safe_load(expression_yaml_str)
-            expression_latex = "f(x) = " + to_latex(expression_tree, kg, ROOTS)
+        for attr, val in has.items():
+            t = val.get("type", "")
+            if t == "math/expression":
+                expr_as = val.get("val_as", {}).get("math/expression", {})
+                expression_str = expr_as.get("expression_str", "")
+                expression_yaml_str = expr_as.get("expression_yaml", "")
+                if expression_yaml_str:
+                    expression_tree = yaml.safe_load(expression_yaml_str)
+                    expression_latex = "f(x) = " + to_latex(expression_tree, kg, ROOTS)
+                break
         for attr, val in has.items():
             t = val.get("type", "")
             if t in ("math/variable", "math/constant"):
