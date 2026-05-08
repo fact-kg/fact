@@ -46,12 +46,21 @@
   <main class="container">
     <h1>Expression Diagram</h1>
 
-    <form method="get">
+    <form method="get" id="search-form">
       <div class="grid">
-        <div style="grid-column: span 2;">
+        <div style="grid-column: span 2; position: relative;">
           <label for="fact">Fact path</label>
           <input type="text" name="fact" id="fact" value="{{ fact_path }}"
-                 placeholder="math/algebra/real/singlevar/polynomial/quadratic">
+                 placeholder="Type to search..." autocomplete="off"
+                 oninput="searchFacts(this.value)">
+          <ul id="suggestions" style="
+            position: absolute; z-index: 10; width: 100%;
+            background: var(--pico-background-color);
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: 4px; margin: 0; padding: 0;
+            list-style: none; max-height: 200px; overflow-y: auto;
+            display: none;
+          "></ul>
         </div>
         <div>
           <label>&nbsp;</label>
@@ -59,6 +68,37 @@
         </div>
       </div>
     </form>
+    <script>
+      var searchTimer = null;
+      function searchFacts(q) {
+        clearTimeout(searchTimer);
+        var list = document.getElementById('suggestions');
+        if (q.length < 2) { list.style.display = 'none'; return; }
+        searchTimer = setTimeout(function() {
+          fetch('/search?q=' + encodeURIComponent(q), {headers: {'Accept': 'application/json'}})
+            .then(function(r) { return r.json(); })
+            .then(function(results) {
+              list.innerHTML = '';
+              results.slice(0, 10).forEach(function(r) {
+                var li = document.createElement('li');
+                li.textContent = r.path;
+                li.style.padding = '6px 10px';
+                li.style.cursor = 'pointer';
+                li.onmousedown = function() {
+                  document.getElementById('fact').value = r.path;
+                  list.style.display = 'none';
+                  document.getElementById('search-form').submit();
+                };
+                list.appendChild(li);
+              });
+              list.style.display = results.length ? 'block' : 'none';
+            });
+        }, 200);
+      }
+      document.getElementById('fact').addEventListener('blur', function() {
+        setTimeout(function() { document.getElementById('suggestions').style.display = 'none'; }, 200);
+      });
+    </script>
 
     {% if error %}
     <p><mark>{{ error }}</mark></p>
