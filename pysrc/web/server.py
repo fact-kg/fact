@@ -29,10 +29,12 @@ from pysrc.web.apps.astronomy.planet_compare.routes import router as planet_comp
 from pysrc.web.apps.physics.element_table.routes import router as element_table_router
 from pysrc.web.apps.physics.unit_converter.routes import router as unit_converter_router
 from pysrc.web.apps.math.polynomial_plot.routes import router as polynomial_plot_router
+from pysrc.web.apps.math.expression_diagram.routes import router as expression_diagram_router
 app.include_router(planet_compare_router)
 app.include_router(element_table_router)
 app.include_router(unit_converter_router)
 app.include_router(polynomial_plot_router)
+app.include_router(expression_diagram_router)
 
 def make_breadcrumb(path):
     parts = path.split("/")

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Expression Diagram — Fact KG</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <script>
+    function toggleTheme() {
+      var h = document.documentElement;
+      var c = h.getAttribute('data-theme');
+      var n = c === 'dark' ? 'light' : c === 'light' ? 'dark' :
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark');
+      h.setAttribute('data-theme', n);
+      localStorage.setItem('theme', n);
+    }
+    (function() {
+      var s = localStorage.getItem('theme');
+      if (s) document.documentElement.setAttribute('data-theme', s);
+    })();
+  </script>
+  <style>
+    #diagram-container {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--pico-muted-border-color);
+      border-radius: var(--pico-border-radius);
+      background: var(--pico-background-color);
+      margin-bottom: 1em;
+    }
+    .expr-tabs { display: flex; gap: 0.5em; margin-bottom: 1em; }
+    .expr-tabs a { padding: 0.4em 1em; border-radius: 4px; text-decoration: none; }
+    .expr-tabs a.active { background: var(--pico-primary); color: var(--pico-primary-inverse); }
+  </style>
+</head>
+<body>
+  <header class="container">
+    <nav>
+      <ul><li><strong><a href="/">Fact KG</a></strong></li></ul>
+      <ul>
+        <li><a href="#" onclick="toggleTheme();return false">Toggle theme</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main class="container">
+    <h1>Expression Diagram</h1>
+
+    <form method="get">
+      <div class="grid">
+        <div style="grid-column: span 2;">
+          <label for="fact">Fact path</label>
+          <input type="text" name="fact" id="fact" value="{{ fact_path }}"
+                 placeholder="math/algebra/real/singlevar/polynomial/quadratic">
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <button type="submit">Show</button>
+        </div>
+      </div>
+    </form>
+
+    {% if error %}
+    <p><mark>{{ error }}</mark></p>
+    {% endif %}
+
+    {% if expressions %}
+    <div class="expr-tabs">
+      {% for name in expressions %}
+      <a href="?fact={{ fact_path }}&expr={{ name }}"
+         class="{% if name == selected_expr %}active{% endif %}">{{ name.replace('expression_', '') }}</a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if expression_str %}
+    <p><code>{{ expression_str }}</code></p>
+    {% endif %}
+
+    {% if diagram_data %}
+    <div id="diagram-container"></div>
+
+    <script>
+      var data = {{ diagram_data | tojson }};
+      var pad = 40;
+      var svgW = data.width + pad * 2;
+      var svgH = data.height + pad * 2;
+
+      var svg = d3.select("#diagram-container")
+        .append("svg")
+        .attr("width", svgW)
+        .attr("height", svgH);
+
+      var g = svg.append("g")
+        .attr("transform", "translate(" + pad + "," + pad + ")");
+
+      var colors = {
+        operation: "#2196F3",
+        expression: "#9C27B0",
+        variable: "#4CAF50",
+        number: "#FF9800",
+        node: "#78909C"
+      };
+
+      // edges
+      g.selectAll("line")
+        .data(data.edges)
+        .enter()
+        .append("line")
+        .attr("x1", function(d) {
+          var n = data.nodes.find(function(n) { return n.id === d.source; });
+          return n.x + n.width / 2;
+        })
+        .attr("y1", function(d) {
+          var n = data.nodes.find(function(n) { return n.id === d.source; });
+          return n.y + n.height;
+        })
+        .attr("x2", function(d) {
+          var n = data.nodes.find(function(n) { return n.id === d.target; });
+          return n.x + n.width / 2;
+        })
+        .attr("y2", function(d) {
+          var n = data.nodes.find(function(n) { return n.id === d.target; });
+          return n.y;
+        })
+        .attr("stroke", "#999")
+        .attr("stroke-width", 1.5);
+
+      // nodes
+      var node = g.selectAll("g.node")
+        .data(data.nodes)
+        .enter()
+        .append("g")
+        .attr("class", "node")
+        .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+
+      node.append("rect")
+        .attr("width", function(d) { return d.width; })
+        .attr("height", function(d) { return d.height; })
+        .attr("rx", 6)
+        .attr("fill", function(d) { return colors[d.type] || colors.node; })
+        .attr("opacity", 0.85);
+
+      node.append("text")
+        .attr("x", function(d) { return d.width / 2; })
+        .attr("y", function(d) { return d.height / 2; })
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "central")
+        .attr("fill", "white")
+        .attr("font-size", "12px")
+        .attr("font-weight", "bold")
+        .text(function(d) { return d.label; });
+    </script>
+    {% endif %}
+  </main>
+</body>
+</html>

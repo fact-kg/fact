@@ -108,3 +108,96 @@ A realistic future workflow:
 4. Human reviews and approves
 
 The skeleton built over these sessions is already enough to demonstrate this.
+
+---
+
+## Session continued — May 6, 2026
+
+### Work Done
+
+#### Multiple expressions per fact
+
+Refactored all expression facts to use `as` pattern on `math/expression` type.
+Before: `expression_str` and `expression_yaml` as separate top-level `has` entries.
+After: wrapped in a named `has` entry typed `math/expression` with `as`:
+
+```yaml
+- has:
+    expression_geometric:
+      type: math/expression
+      as:
+        - math/expression:
+            expression_str:
+              value: "sin(x) = opposite / hypotenuse"
+            expression_yaml:
+              value: |
+                math/algebra/operation/divide:
+                  - opposite
+                  - hypotenuse
+```
+
+Updated ~10 fact files (quadratic, linear, cubic, n_degree, root_plus, root_minus,
+linear/root, pi, e, newton_second) and the evaluator/LaTeX renderer in routes.py.
+
+#### Mathematical constants — e and pi
+
+Created `math/analysis/constant/e.yaml` — dual identity as `math/constant`
+(value 2.718281828459045) and `math/expression` (limit definition). Introduced
+`math/analysis/real/calculus/expression/limit.yaml` concept.
+
+Created `math/analysis/constant/pi.yaml` — dual identity with geometric expression
+(circumference / diameter). Created supporting geometry facts:
+`math/geometry/euclidean/shape/circle.yaml` with `circle/circumference.yaml` and
+`circle/diameter.yaml`.
+
+#### sin(x) with five expressions
+
+Created `math/analysis/real/function/trigonometric/sin.yaml` with `python_impl`
+and five expression representations:
+1. Geometric — opposite / hypotenuse (working)
+2. Taylor series — FIXME: needs factorial
+3. Euler's formula — FIXME: needs complex numbers, exp
+4. Unit circle — FIXME: needs geometry concepts
+5. Differential equation — FIXME: needs ODE concept
+
+Each FIXME marks a gap in the expression system — a roadmap.
+
+#### Newton's second law — two expressions
+
+Added differential form `F(t) = m * d²x/dt²` alongside algebraic `F = ma`.
+FIXME for derivative operation.
+
+### Design Decisions
+
+#### Multiple expressions use `as` pattern
+
+**Decision:** Each expression is a `has` entry typed `math/expression`, with
+`expression_str` and `expression_yaml` set via `as`. Multiple expressions per
+fact get descriptive names (`expression_geometric`, `expression_taylor`, etc.).
+
+**Rationale:** Reality has multiple simultaneously correct descriptions. A KG
+should capture all of them, not force one canonical form. The `as` pattern
+is consistent with how other typed properties work.
+
+#### Constants are both value and expression
+
+**Decision:** `e` and `pi` have `is: math/constant` (with numeric value via `as`)
+AND `is: math/expression` (with defining formula). Dual identity.
+
+**Rationale:** A constant's value is a fact. How it's defined is also a fact.
+Both matter — the value for computation, the definition for understanding.
+
+#### Function vs expression distinction
+
+**Decision:** Expressions with no free variables → constants (e, pi).
+Expressions with free variables → functions (sin, quadratic).
+Both use `math/expression` for their expression trees.
+
+#### Geometry taxonomy
+
+**Decision:** `math/geometry/euclidean/shape/circle/` with properties
+(circumference, diameter) nested under the shape, not abstracted as general
+properties.
+
+**Rationale:** Circumference is circle-specific. No practical value in
+abstracting it away from the shape it belongs to.
