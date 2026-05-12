@@ -42,6 +42,8 @@ class AlgorithmExecutor:
             result = self._exec_if(step_as, variables, steps)
         elif step_type == "computer/algorithm/indexed/for_each":
             result = self._exec_for_each(step_as, variables, steps)
+        elif step_type == "computer/algorithm/evaluate_expression":
+            result = self._exec_evaluate_expression(step_as, variables)
         elif step_type == "computer/algorithm/return":
             return self._exec_return(step_as, variables)
 
@@ -96,6 +98,18 @@ class AlgorithmExecutor:
                 self._execute_step(body_step, steps, variables)
         if index_name in variables:
             del variables[index_name]
+
+    def _exec_evaluate_expression(self, step_as, variables):
+        expr_path_key = step_as.get("expression", "")
+        expr_path = variables.get(expr_path_key, expr_path_key)
+        result_var = step_as.get("result_variable", "result")
+        info = load_fact_info(self.kg, expr_path)
+        if info is None:
+            raise ValueError(f"Cannot load expression: {expr_path}")
+        expr = extract_expression(info)
+        if expr is None or expr["tree"] is None:
+            raise ValueError(f"No expression tree in: {expr_path}")
+        variables[result_var] = self.evaluator.evaluate(expr["tree"], dict(variables))
 
     def _exec_return(self, step_as, variables):
         var_name = step_as.get("variable", "")

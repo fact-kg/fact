@@ -19,6 +19,10 @@ def run_test(kg, test_path):
     if info is None:
         return False, f"Cannot load test: {test_path}"
 
+    types = info.get("type", [])
+    if "computer/test/case" not in types:
+        return None, None
+
     val_as = info.get("val_as", {}).get("computer/test/case", {})
     description = val_as.get("description", test_path)
     subject = val_as.get("subject", "")
@@ -87,6 +91,8 @@ def main():
                 if '/test/' not in fact_path:
                     continue
                 ok, msg = run_test(kg, fact_path)
+                if ok is None:
+                    continue
                 if ok:
                     passed += 1
                 else:
@@ -103,6 +109,8 @@ def main():
             for yaml_file in test_dir.rglob("*.yaml"):
                 test_path = str(yaml_file.relative_to(root).with_suffix('')).replace('\\', '/')
                 ok, msg = run_test(kg, test_path)
+                if ok is None:
+                    continue
                 if ok:
                     passed += 1
                 else:
