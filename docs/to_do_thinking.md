@@ -1,5 +1,119 @@
 # Ideas to Think About
 
+## What executable algorithms in KG open up
+
+Having precise, executable algorithms as facts is a huge feature. Here are
+the doors it opens.
+
+### Automatic code generation — real, not hallucinated
+
+Algorithm facts have typed inputs, typed operations, explicit control flow,
+and tests. Generating Python/Rust/JavaScript is mechanical translation. The
+generated code is provably correct because it matches the tested algorithm
+fact. Not "LLM generates code from a prompt" — structured, verifiable
+translation.
+
+### Algorithm comparison
+
+Store bubble sort, merge sort, quicksort as facts. They all solve the same
+problem with different steps. Compare structurally — "merge sort uses
+recursion, bubble sort uses nested loops." Compare empirically — run the
+same tests, measure performance. Comparison is fact-based, not opinion.
+
+### Algorithm evolution
+
+Version algorithms by creating variants. `find_max_v2` handles empty arrays.
+The diff between v1 and v2 is visible in the fact structure — which steps
+changed, which constraints were added. Git tracks file changes; our system
+tracks knowledge changes.
+
+### Proving theorems about algorithms
+
+With constraints (preconditions, postconditions, loop invariants), a theorem
+prover could verify them. "Given precondition 'array is non-empty', does the
+algorithm guarantee postcondition 'result is maximum'?" Formal verification
+from human-readable YAML.
+
+### Teaching
+
+An algorithm fact with steps + constraints + descriptions + flowchart + tests
++ expression trees is a complete lesson. A student sees the flowchart, reads
+the constraints, runs the tests, modifies a parameter, sees what breaks. The
+knowledge IS the textbook.
+
+### Algorithm discovery
+
+"Find all algorithms that use `greater_than` operation."
+"Find all algorithms that iterate over arrays."
+"Which algorithm handles empty arrays?"
+Graph queries on the KG — algorithm structure is searchable knowledge.
+
+### Composable computation
+
+An algorithm that calls another algorithm. A physics simulation calls
+`evaluate_expression` for `F=ma`, calls numerical integration for position
+update, calls `find_max` for collision detection. The entire simulation is
+facts — auditable, testable, modifiable without coding.
+
+### Algorithm regression
+
+Given observed input-output pairs, match them against algorithms in the KG.
+An agent observes a system producing outputs and runs each algorithm against
+those inputs. When outputs match, conclude which algorithm the system
+implements.
+
+Enables:
+- **Reverse engineering** — observe a black box, identify the algorithm
+- **Validation** — "does this system implement the algorithm we think?"
+- **Scientific discovery** — observe natural phenomena, match against known
+  mathematical models. "This data fits F = ma" is algorithm regression
+  against physics equations
+- **Paper verification** — a paper claims "we use algorithm X." Run
+  algorithm X against the paper's reported data and check if results match.
+
+This is automated hypothesis testing — the KG has the hypotheses as
+executable facts, the regression tests them against observed reality.
+
+### The unusual territory
+
+This system sits between a programming language and a knowledge base. It's
+not a language — you can't write arbitrary programs. It's not just a
+database — it executes. It's a **knowledge machine** — structured knowledge
+that does work.
+
+### Related research: LaSR — Symbolic Regression with a Learned Concept Library
+
+NeurIPS 2024 paper (Grayeli, Sehgal, Costilla Reyes, Cranmer, Chaudhuri).
+Uses LLMs to discover mathematical formulas from data — symbolic regression
+enhanced with learned concept abstractions.
+
+Reference: https://neurips.cc/virtual/2024/poster/96212
+
+Connection to our system:
+- **Their output is our input.** LaSR discovers equations like `F = ma`.
+  Our system stores them as executable, testable expression trees.
+- **Algorithm regression is the reverse.** They: data → find equation.
+  Us: observed data → match against known equations in KG.
+- **Their "concept library" ≈ our operation taxonomy.** They learn that
+  "multiplication of two variables" is reusable. We have
+  `math/algebra/operation/multiply` as a fact.
+- **Combined workflow:** LaSR discovers formula from data → our system
+  stores it as a fact with expression tree + tests + constraints + LaTeX →
+  future LaSR runs benefit from stored knowledge.
+
+Validates direction: research community is moving toward structured symbolic
+knowledge + LLM reasoning. We're building the knowledge infrastructure.
+
+### Next design step
+
+Layer declarative descriptions and constraints onto algorithm facts:
+- Preconditions and postconditions on algorithms
+- Constraints on variables (invariants)
+- Natural language descriptions on steps
+
+Same fact = procedural (steps) + declarative (constraints) + descriptive
+(natural language). Multiple valid representations of the same knowledge.
+
 ## EARS (Easy Approach to Requirements Syntax)
 
 Structured natural language templates for requirements: ubiquitous, event-driven,

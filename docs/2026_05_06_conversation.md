@@ -201,3 +201,130 @@ properties.
 
 **Rationale:** Circumference is circle-specific. No practical value in
 abstracting it away from the shape it belongs to.
+
+---
+
+## Session — May 11, 2026
+
+### Work Done
+
+#### Expression module extracted
+
+Moved expression evaluator, LaTeX renderer, and helpers from the polynomial
+plot app into a shared library at `pysrc/expression/`:
+- `evaluator.py` — `ExpressionEvaluator` class with operation resolution
+- `latex.py` — `ExpressionLatex` class with LaTeX rendering
+- `helpers.py` — `load_fact_info`, `extract_expression`, `extract_all_expressions`
+
+Both the polynomial plot and expression diagram apps now use the shared module.
+
+#### Algorithm system
+
+Created algorithm step types as facts:
+- `computer/algorithm.yaml` — base type
+- `computer/algorithm/step.yaml` — base step with `next`
+- `computer/algorithm/assign.yaml` — set variable
+- `computer/algorithm/if.yaml` — conditional branch
+- `computer/algorithm/indexed/for_each.yaml` — iteration
+- `computer/algorithm/return.yaml` — produce output
+- `computer/algorithm/evaluate_expression.yaml` — evaluate a math expression
+
+Created `computer/algorithm/array/find_max.yaml` — first algorithm, uses 4 step
+types with reusable, parameterized steps. Variables passed by name, comparison
+operation pluggable via `python_impl`.
+
+Created `computer/algorithm/evaluate_expression_and_return.yaml` — generic
+two-step algorithm that evaluates any expression fact and returns the result.
+
+#### Algorithm executor
+
+`pysrc/algo_executor.py` — `AlgorithmExecutor` class that reads algorithm
+steps from fact `has`/`as` structure, walks the `next` chain, dispatches to
+step executors by type. Uses the shared expression evaluator for
+`evaluate_expression` steps and comparison operations.
+
+#### Test framework
+
+Created `computer/test/case.yaml` — test case type with `description`,
+`subject`, `expected_result`.
+
+Created `pysrc/test/runner.py` — discovers test facts by scanning for
+`/test/` in paths, loads subject (algorithm), executes with test inputs,
+compares result to expected. Supports both algorithm tests and expression
+tests (via `evaluate_expression_and_return` algorithm).
+
+Test cases created:
+- `computer/algorithm/array/find_max/test/` — 4 tests (basic, single
+  element, negative numbers, duplicates)
+- `math/algebra/real/singlevar/polynomial/quadratic/test/` — 3 tests
+  (basic, zeros, negative coefficients)
+
+All 7 tests pass.
+
+#### Algorithm viewer app
+
+Created `/apps/computer/algorithm_viewer/` — search for algorithm facts,
+visualize as flowchart with D3.
+
+FlowLayout in `pysrc/diagram/flow_layout.py` — positions steps in
+columns (main flow left, branches right), different shapes per step type:
+- Rectangle (blue) — assign, evaluate
+- Diamond (orange) — if condition
+- Hexagon (purple) — for_each loop
+- Rounded rectangle (green) — return
+
+Loop-back edges rendered as dashed polylines routed around body steps.
+
+#### Diagram library improvements
+
+Separated `FlowLayout` into its own file `pysrc/diagram/flow_layout.py`.
+Studied pyflowchart library — it does zero layout (delegates to flowchart.js).
+Useful patterns: `NodesGroup` for composable subgraphs, `TransparentNode`
+for edge routing. For professional layout, Sugiyama/layered algorithm is
+the standard — future improvement.
+
+### Design Decisions
+
+#### Algorithms are the testable unit
+
+**Decision:** Expressions are tested by wrapping them in the
+`evaluate_expression_and_return` algorithm. The test runner only executes
+algorithms. Every testable computation is an algorithm.
+
+**Rationale:** An algorithm takes inputs and returns an output — naturally
+testable. Evaluating an expression is just a two-step algorithm (evaluate →
+return). This unified the test framework: one runner, one test case format.
+
+#### Step types are reusable
+
+**Decision:** Algorithm steps (`assign`, `if`, `for_each`, `return`) are
+generic fact types. Each algorithm assembles them with specific parameters
+via `as`. Steps receive variable names, not hardcoded values.
+
+**Rationale:** `find_min` reuses the same steps as `find_max` with a
+different comparison operation. The steps don't know what algorithm they're
+in — they're pluggable components.
+
+#### Fact-code boundary for algorithms
+
+**Decision:** Facts describe algorithm structure (steps, connections, variable
+names, operation references). Code provides step semantics (what "assign" does).
+The dispatch table in `algo_executor.py` is the irreducible code layer.
+
+**Rationale:** Same pattern as expression operations — `python_impl` resolves
+to a symbol, the symbol maps to a function. Facts say "what," code says "how."
+
+#### pyflowchart study
+
+pyflowchart generates text for flowchart.js, does no layout computation.
+For our use case (full control, D3 rendering), the useful takeaways are:
+- `NodesGroup` for composable subgraphs
+- `TransparentNode` for edge routing
+- Sugiyama algorithm for professional layered layout
+
+### What's Still Rough
+
+- FlowLayout has magic numbers and simple column/row positioning
+- Algorithm executor has hardcoded bracket parsing for array access
+  (should use expression evaluator)
+- No interactive algorithm execution app (only flowchart viewing)
