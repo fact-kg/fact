@@ -6,40 +6,12 @@ from fastapi.templating import Jinja2Templates
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent.parent))
 
-import yaml
-from kg import Kg
-from fact import Fact
+from expression import load_fact_info
+from expression.helpers import extract_all_expressions
 from diagram import TreeLayout, to_json
 
 router = APIRouter(prefix="/apps/math/expression_diagram")
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
-
-
-def load_fact_info(kg, path, ROOTS):
-    has_fact = any((root / (path + ".yaml")).exists() for root in ROOTS)
-    if not has_fact or kg.load(path) != 0:
-        return None
-    fact = Fact(kg, path)
-    if fact.construct() != 0:
-        return None
-    return kg.get_fact(path).get("info", {})
-
-
-def extract_expressions(info):
-    expressions = {}
-    has = info.get("has", {})
-    for attr, val in has.items():
-        if val.get("type") == "math/expression":
-            val_as = val.get("val_as", {}).get("math/expression", {})
-            expr_str = val_as.get("expression_str", "")
-            expr_yaml = val_as.get("expression_yaml", "")
-            if expr_yaml:
-                expressions[attr] = {
-                    "str": expr_str,
-                    "yaml": expr_yaml,
-                    "tree": yaml.safe_load(expr_yaml),
-                }
-    return expressions
 
 
 def tree_children(node):
@@ -110,11 +82,11 @@ def expression_diagram(request: Request):
     error = ""
 
     if fact_path:
-        info = load_fact_info(kg, fact_path, ROOTS)
+        info = load_fact_info(kg, fact_path)
         if info is None:
             error = f"Fact not found: {fact_path}"
         else:
-            expressions = extract_expressions(info)
+            expressions = extract_all_expressions(info)
             if not expressions:
                 error = f"No expressions found for: {fact_path}"
             else:
