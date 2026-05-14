@@ -114,6 +114,72 @@ Layer declarative descriptions and constraints onto algorithm facts:
 Same fact = procedural (steps) + declarative (constraints) + descriptive
 (natural language). Multiple valid representations of the same knowledge.
 
+**Status (May 11, 2026):** Implemented on find_max algorithm. Precondition,
+postcondition, loop invariant, and step descriptions added alongside
+procedural steps. All tests still pass.
+
+## Knowledge quality metrics
+
+### Existing research
+
+**Zaveri et al. (2016) — "Quality Assessment for Linked Data"**
+Canonical framework with 18 quality dimensions:
+- **Property completeness** — does each fact have all properties its type declares?
+- **Schema completeness** — are all class properties present?
+- **Semantic accuracy** — correct real-world mapping
+- **Consistency** — adherence to structural definitions
+
+**OQuaRE — Ontology Quality Metrics (Duque-Ramos et al., 2011)**
+Structural metrics adapted from software engineering:
+- **ANOnto** — annotation richness (annotations per class)
+- **DITOnto** — depth of inheritance tree
+- **AROnto** — attribute richness (restrictions per class)
+- **NOMOnto** — number of methods (properties per class)
+
+**SHACL constraint satisfaction rate** — fraction of entities passing declared
+shape constraints. Measures how well data conforms to its own rules.
+
+**Depth vs breadth proxies** — breadth = number of distinct types/paths.
+Depth = average properties per fact. Density = edges/nodes ratio.
+
+**Information-theoretic** — description entropy (Shannon entropy over property
+distributions per class). Low entropy = uniform descriptions. Anomalies
+indicate errors. (Paulheim & Bizer, 2014)
+
+### Gap: no metric for multi-representation quality
+
+No established standard for measuring quality across declarative + procedural
++ constraint representations simultaneously. This is novel territory.
+
+### Possible metric for our system
+
+Property completeness as base, with richness bonuses:
+
+```
+Quality(fact) = (properties filled / properties declared by type)
+             × (1 + has_description × 0.2)
+             × (1 + has_constraints × 0.3)
+             × (1 + has_tests × 0.3)
+             × (1 + multiple_representations × 0.2)
+```
+
+The checker could report quality scores alongside pass/fail. Example output:
+"325 facts: avg quality 0.4, 200 at base level, 50 with descriptions,
+10 with constraints, 7 tested."
+
+More objective alternative: **number of answerable questions** — how many
+distinct questions can be answered using this fact? A fact with only `is`
+answers "does X exist?" A fact with tests answers "what does X return for
+input Y?" A fact with constraints answers "is X correct for all inputs?"
+
+### Key insight
+
+Knowledge quality is not about counting layers we added. It's about
+measuring the actual information content and verifiability of the fact.
+Property completeness (Zaveri) is the most directly applicable existing
+metric. Constraint satisfaction rate (SHACL-inspired) captures our unique
+multi-layer approach.
+
 ## EARS (Easy Approach to Requirements Syntax)
 
 Structured natural language templates for requirements: ubiquitous, event-driven,

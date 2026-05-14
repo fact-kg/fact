@@ -12,6 +12,12 @@ from diagram import FlowLayout, to_json
 router = APIRouter(prefix="/apps/computer/algorithm_viewer")
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
+CONSTRAINT_TYPES = {
+    "computer/algorithm/precondition",
+    "computer/algorithm/postcondition",
+    "computer/algorithm/invariant",
+}
+
 
 def extract_algorithm(info):
     has = info.get("has", {})
@@ -21,9 +27,23 @@ def extract_algorithm(info):
         description = desc_info.get("val", "")
 
     steps = {}
+    constraints = {}
+    variables = {}
     for attr, val in has.items():
         if attr.startswith("step_"):
             steps[attr] = val
+        elif val.get("type") in CONSTRAINT_TYPES:
+            constraint_as = val.get("val_as", {}).get(val["type"], {})
+            constraints[attr] = {
+                "kind": val["type"].rsplit("/", 1)[-1],
+                "condition": constraint_as.get("condition", ""),
+            }
+        elif val.get("type") in ("math/variable", "list"):
+            var_as = val.get("val_as", {}).get(val["type"], {})
+            variables[attr] = {
+                "type": val["type"],
+                "description": var_as.get("description", ""),
+            }
 
     first_step = None
     for name in ["step_init", "step_start", "step_evaluate"]:
@@ -33,7 +53,7 @@ def extract_algorithm(info):
     if first_step is None and steps:
         first_step = next(iter(steps))
 
-    return description, steps, first_step
+    return description, steps, first_step, constraints, variables
 
 
 @router.get("/")
@@ -41,10 +61,13 @@ def algorithm_viewer(request: Request):
     from pysrc.web.server import kg, ROOTS
 
     fact_path = request.query_params.get("fact", "")
+    view = request.query_params.get("view", "flowchart")
 
     info = None
     description = ""
     steps = {}
+    constraints = {}
+    variables = {}
     diagram_data = None
     error = ""
 
@@ -57,10 +80,10 @@ def algorithm_viewer(request: Request):
             if "computer/algorithm" not in types:
                 error = f"Not an algorithm: {fact_path}"
             else:
-                description, steps, first_step = extract_algorithm(info)
+                description, steps, first_step, constraints, variables = extract_algorithm(info)
                 if not steps:
                     error = f"No steps found in: {fact_path}"
-                elif first_step:
+                elif first_step and view == "flowchart":
                     layout = FlowLayout()
                     diagram = layout.layout(steps, first_step)
                     diagram_data = to_json(diagram)
@@ -75,8 +98,11 @@ def algorithm_viewer(request: Request):
 
     return templates.TemplateResponse(request, "algorithm_viewer.html", {
         "fact_path": fact_path,
+        "view": view,
         "description": description,
         "steps": steps,
+        "constraints": constraints,
+        "variables": variables,
         "diagram_data": diagram_data,
         "error": error,
     })

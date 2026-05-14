@@ -105,7 +105,69 @@
     <p><strong>{{ description }}</strong></p>
     {% endif %}
 
-    {% if diagram_data %}
+    {% if steps %}
+    <div style="display: flex; gap: 0.5em; margin-bottom: 1em;">
+      <a href="?fact={{ fact_path }}&view=flowchart"
+         style="padding: 0.4em 1em; border-radius: 4px; text-decoration: none;
+         {% if view == 'flowchart' %}background: var(--pico-primary); color: var(--pico-primary-inverse);{% endif %}">Flowchart</a>
+      <a href="?fact={{ fact_path }}&view=text"
+         style="padding: 0.4em 1em; border-radius: 4px; text-decoration: none;
+         {% if view == 'text' %}background: var(--pico-primary); color: var(--pico-primary-inverse);{% endif %}">Text</a>
+    </div>
+    {% endif %}
+
+    {% if view == 'text' and steps %}
+    {% if constraints %}
+    <h3>Constraints</h3>
+    <table>
+      <thead><tr><th>Name</th><th>Kind</th><th>Condition</th></tr></thead>
+      <tbody>
+        {% for name, c in constraints.items() %}
+        <tr>
+          <td><b>{{ name }}</b></td>
+          <td>{{ c.kind }}</td>
+          <td><code>{{ c.condition }}</code></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {% if variables %}
+    <h3>Variables</h3>
+    <table>
+      <thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        {% for name, v in variables.items() %}
+        <tr>
+          <td><b>{{ name }}</b></td>
+          <td>{{ v.type }}</td>
+          <td>{{ v.description }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    <h3>Steps</h3>
+    {% for name, step in steps.items() %}
+    <details{% if loop.first %} open{% endif %}>
+      <summary><b>{{ name }}</b> <small>({{ step.type.rsplit('/', 1)[-1] }})</small></summary>
+      {% set step_as = step.get('val_as', {}).get(step.type, {}) %}
+      {% if step_as.get('description') %}
+      <p><em>{{ step_as.description }}</em></p>
+      {% endif %}
+      <table>
+        {% for key, val in step_as.items() %}
+        {% if key != 'description' %}
+        <tr><td><b>{{ key }}</b></td><td><code>{{ val }}</code></td></tr>
+        {% endif %}
+        {% endfor %}
+      </table>
+    </details>
+    {% endfor %}
+
+    {% elif diagram_data %}
     <div id="diagram-container"></div>
 
     <script>
