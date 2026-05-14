@@ -12,28 +12,25 @@ STEP_SHAPES = {
 
 class FlowLayout(Layout):
     def __init__(self, node_width=160, node_height=50,
-                 h_spacing=60, v_spacing=40):
+                 h_spacing=60, v_spacing=40, diagram_padding=20):
         self.node_width = node_width
         self.node_height = node_height
         self.h_spacing = h_spacing
         self.v_spacing = v_spacing
+        self.diagram_padding = diagram_padding
 
     def layout(self, steps, first_step) -> Diagram:
         diagram = Diagram()
-
-        main_col = 0
-        branch_col = 1
-
-        row = 0
         visited = set()
-        self._place_chain(first_step, steps, diagram, row, main_col,
-                          branch_col, visited)
+        self._place_chain(first_step, steps, diagram, 0, 0, 1, visited)
 
         if diagram.nodes:
             max_x = max(n.x + n.width for n in diagram.nodes)
             max_y = max(n.y + n.height for n in diagram.nodes)
-            diagram.width = max_x + self.h_spacing
-            diagram.height = max_y + self.v_spacing
+            has_loop = any(e.style == "loop" for e in diagram.edges)
+            loop_extra = self.h_spacing if has_loop else 0
+            diagram.width = max_x + self.diagram_padding + loop_extra
+            diagram.height = max_y + self.diagram_padding + (self.v_spacing if has_loop else 0)
 
         return diagram
 
@@ -43,12 +40,18 @@ class FlowLayout(Layout):
     def _row_y(self, row):
         return row * (self.node_height + self.v_spacing)
 
-    def _place_node(self, diagram, step_name, step_type, step_as, row, col):
+    def _add_node(self, diagram, name, step_type, step_as, row, col):
         shape = STEP_SHAPES.get(step_type, "rect")
-        label = self._make_label(step_name, step_type, step_as)
-        diagram.add_node(step_name, label, type=shape,
-                         x=self._col_x(col), y=self._row_y(row),
-                         width=self.node_width, height=self.node_height)
+        label = self._make_label(name, step_type, step_as)
+        return diagram.add_node(name, label, type=shape,
+                                x=self._col_x(col), y=self._row_y(row),
+                                width=self.node_width, height=self.node_height)
+
+    def _step_info(self, step_name, steps):
+        step = steps[step_name]
+        step_type = step["type"]
+        step_as = step.get("val_as", {}).get(step_type, {})
+        return step_type, step_as
 
     def _place_chain(self, step_name, steps, diagram, row, col,
                      branch_col, visited):
@@ -56,17 +59,14 @@ class FlowLayout(Layout):
             return row
 
         visited.add(step_name)
-        step = steps[step_name]
-        step_type = step["type"]
-        step_as = step.get("val_as", {}).get(step_type, {})
-
-        self._place_node(diagram, step_name, step_type, step_as, row, col)
+        step_type, step_as = self._step_info(step_name, steps)
+        self._add_node(diagram, step_name, step_type, step_as, row, col)
 
         next_row = row + 1
 
         if step_type == "computer/algorithm/if":
-            self._place_if_branch(step_as, steps, diagram, row,
-                                  branch_col, visited)
+            self._place_if_branch(step_name, step_as, steps, diagram,
+                                  row, branch_col, visited)
 
         if step_type == "computer/algorithm/indexed/for_each":
             next_row = self._place_for_each(step_name, step_as, steps,
@@ -74,30 +74,26 @@ class FlowLayout(Layout):
 
         next_step = step_as.get("next", "")
         if next_step and next_step in steps:
-            label = "done" if step_type == "computer/algorithm/indexed/for_each" else ""
+            edge_label = "done" if step_type == "computer/algorithm/indexed/for_each" else ""
+            diagram.add_edge(step_name, next_step, label=edge_label)
             if next_step not in visited:
-                diagram.add_edge(step_name, next_step, label=label)
                 return self._place_chain(next_step, steps, diagram,
                                          next_row, col, branch_col, visited)
-            else:
-                diagram.add_edge(step_name, next_step, label=label)
 
         return next_row
 
-    def _place_if_branch(self, step_as, steps, diagram, row,
+    def _place_if_branch(self, parent_name, step_as, steps, diagram, row,
                          branch_col, visited):
         then_step = step_as.get("then", "")
         if not then_step or then_step not in steps or then_step in visited:
             return
-        then = steps[then_step]
-        then_type = then["type"]
-        then_as = then.get("val_as", {}).get(then_type, {})
-        self._place_node(diagram, then_step, then_type, then_as, row, branch_col)
-        diagram.add_edge(list(diagram.nodes)[-2].id if len(diagram.nodes) > 1
-                         else then_step, then_step, label="yes")
+
+        step_type, then_as = self._step_info(then_step, steps)
+        self._add_node(diagram, then_step, step_type, then_as, row, branch_col)
+        diagram.add_edge(parent_name, then_step, label="yes")
         visited.add(then_step)
 
-    def _place_for_each(self, step_name, step_as, steps, diagram, row,
+    def _place_for_each(self, parent_name, step_as, steps, diagram, row,
                         branch_col, visited):
         body_step = step_as.get("body", "")
         if not body_step or body_step not in steps:
@@ -106,19 +102,16 @@ class FlowLayout(Layout):
         last_body = self._place_body_chain(body_step, steps, diagram,
                                            row, branch_col, branch_col + 1,
                                            visited)
-        diagram.add_edge(step_name, body_step, label="body")
+        diagram.add_edge(parent_name, body_step, label="body")
         if last_body:
-            diagram.add_edge(last_body, step_name, label="loop", style="loop")
+            diagram.add_edge(last_body, parent_name, label="loop", style="loop")
 
-        body_nodes = [n for n in diagram.nodes
-                      if n.x >= self._col_x(branch_col)
-                      and n.y >= self._row_y(row)]
-        if body_nodes:
-            max_body_row = max(
-                int(round(n.y / (self.node_height + self.v_spacing)))
-                for n in body_nodes)
-            return max(row + 1, max_body_row + 1)
-        return row + 1
+        max_body_y = max(
+            (n.y for n in diagram.nodes if n.x >= self._col_x(branch_col)
+             and n.y >= self._row_y(row)),
+            default=self._row_y(row))
+        max_body_row = int(round(max_body_y / (self.node_height + self.v_spacing)))
+        return max(row + 1, max_body_row + 1)
 
     def _place_body_chain(self, step_name, steps, diagram, row, col,
                           branch_col, visited):
@@ -126,21 +119,16 @@ class FlowLayout(Layout):
             return None
 
         visited.add(step_name)
-        step = steps[step_name]
-        step_type = step["type"]
-        step_as = step.get("val_as", {}).get(step_type, {})
-
-        self._place_node(diagram, step_name, step_type, step_as, row, col)
+        step_type, step_as = self._step_info(step_name, steps)
+        self._add_node(diagram, step_name, step_type, step_as, row, col)
         last_step = step_name
 
         if step_type == "computer/algorithm/if":
             then_step = step_as.get("then", "")
             if then_step and then_step in steps and then_step not in visited:
-                then = steps[then_step]
-                then_type = then["type"]
-                then_as = then.get("val_as", {}).get(then_type, {})
-                self._place_node(diagram, then_step, then_type, then_as,
-                                 row, col + 1)
+                then_type, then_as = self._step_info(then_step, steps)
+                self._add_node(diagram, then_step, then_type, then_as,
+                               row, col + 1)
                 diagram.add_edge(step_name, then_step, label="yes")
                 visited.add(then_step)
                 last_step = then_step
@@ -156,7 +144,7 @@ class FlowLayout(Layout):
             args = step_as.get("condition_args", [])
             cond = step_as.get("condition", "").rsplit("/", 1)[-1]
             if len(args) >= 2:
-                return f"{args[0]} {cond} {args[1]}?"
+                return f"{args[0]} {cond}\n{args[1]}?"
             return f"{cond}?"
         if step_type == "computer/algorithm/indexed/for_each":
             idx = step_as.get("index", "i")

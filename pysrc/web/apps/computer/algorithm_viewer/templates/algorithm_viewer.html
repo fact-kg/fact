@@ -204,21 +204,29 @@
         rounded: "#4CAF50"
       };
 
-      // edges
       var nodeMap = {};
       data.nodes.forEach(function(n) { nodeMap[n.id] = n; });
 
+      var loopMargin = 25;
+      var edgeColor = "#666";
+      var loopColor = "#999";
+      var labelSize = "11px";
+      var hexIndent = 15;
+      var cornerRadius = 4;
+
+      function sameRow(s, t) { return Math.abs(s.y - t.y) < 5; }
+
+      // draw edges
       data.edges.forEach(function(d) {
         var s = nodeMap[d.source], t = nodeMap[d.target];
         if (d.style === "loop") {
-          // loop-back: go down from source, right, up, then left to target top
           var sx = s.x + s.width / 2;
           var sy = s.y + s.height;
           var tx = t.x + t.width / 2;
           var ty = t.y;
-          var loopX = Math.max(s.x + s.width, t.x + t.width) + 40;
-          var loopBottom = sy + 20;
-          var loopTop = ty - 20;
+          var loopX = Math.max(s.x + s.width, t.x + t.width) + loopMargin * 2;
+          var loopBottom = sy + loopMargin;
+          var loopTop = ty - loopMargin;
           g.append("path")
             .attr("d", "M" + sx + "," + sy +
                         " L" + sx + "," + loopBottom +
@@ -227,59 +235,49 @@
                         " L" + tx + "," + loopTop +
                         " L" + tx + "," + ty)
             .attr("fill", "none")
-            .attr("stroke", "#999")
+            .attr("stroke", loopColor)
             .attr("stroke-width", 1.5)
             .attr("stroke-dasharray", "5,3")
             .attr("marker-end", "url(#arrowhead)");
-        } else if (Math.abs(s.y - t.y) < 5) {
-          // horizontal: same row, connect right to left
-          var sx = s.x + s.width;
-          var sy = s.y + s.height / 2;
-          var tx = t.x;
-          var ty = t.y + t.height / 2;
+        } else if (sameRow(s, t)) {
           g.append("line")
-            .attr("x1", sx).attr("y1", sy)
-            .attr("x2", tx).attr("y2", ty)
-            .attr("stroke", "#666")
-            .attr("stroke-width", 1.5)
+            .attr("x1", s.x + s.width).attr("y1", s.y + s.height / 2)
+            .attr("x2", t.x).attr("y2", t.y + t.height / 2)
+            .attr("stroke", edgeColor).attr("stroke-width", 1.5)
             .attr("marker-end", "url(#arrowhead)");
         } else {
-          // vertical: connect bottom to top
           g.append("line")
-            .attr("x1", s.x + s.width / 2)
-            .attr("y1", s.y + s.height)
-            .attr("x2", t.x + t.width / 2)
-            .attr("y2", t.y)
-            .attr("stroke", "#666")
-            .attr("stroke-width", 1.5)
+            .attr("x1", s.x + s.width / 2).attr("y1", s.y + s.height)
+            .attr("x2", t.x + t.width / 2).attr("y2", t.y)
+            .attr("stroke", edgeColor).attr("stroke-width", 1.5)
             .attr("marker-end", "url(#arrowhead)");
         }
       });
 
-      // edge labels
+      // draw edge labels
       data.edges.forEach(function(d) {
         if (!d.label) return;
         var s = nodeMap[d.source], t = nodeMap[d.target];
         var lx, ly;
         if (d.style === "loop") {
-          lx = Math.max(s.x + s.width, t.x + t.width) + 45;
+          lx = Math.max(s.x + s.width, t.x + t.width) + loopMargin * 2 + 5;
           ly = (s.y + s.height + t.y) / 2;
-        } else if (Math.abs(s.y - t.y) < 5) {
+        } else if (sameRow(s, t)) {
           lx = (s.x + s.width + t.x) / 2;
-          ly = s.y + s.height / 2 - 8;
+          ly = s.y + s.height / 2 - 10;
         } else {
-          lx = (s.x + s.width / 2 + t.x + t.width / 2) / 2 + 5;
+          lx = Math.max(s.x, t.x) + s.width / 2 + 8;
           ly = (s.y + s.height + t.y) / 2;
         }
         g.append("text")
           .attr("x", lx).attr("y", ly)
-          .attr("fill", "#666")
-          .attr("font-size", "11px")
+          .attr("fill", edgeColor)
+          .attr("font-size", labelSize)
           .attr("font-style", "italic")
           .text(d.label);
       });
 
-      // nodes
+      // draw nodes
       var node = g.selectAll("g.node")
         .data(data.nodes)
         .enter()
@@ -290,51 +288,45 @@
       node.each(function(d) {
         var el = d3.select(this);
         var color = colors[d.type] || colors.rect;
+        var w = d.width, h = d.height;
 
         if (d.type === "diamond") {
-          var cx = d.width / 2, cy = d.height / 2;
           el.append("polygon")
             .attr("points",
-              cx + ",0 " + d.width + "," + cy + " " +
-              cx + "," + d.height + " 0," + cy)
-            .attr("fill", color)
-            .attr("opacity", 0.85);
+              (w/2)+",0 "+w+","+(h/2)+" "+(w/2)+","+h+" 0,"+(h/2))
+            .attr("fill", color).attr("opacity", 0.85);
         } else if (d.type === "rounded") {
-          el.append("rect")
-            .attr("width", d.width)
-            .attr("height", d.height)
-            .attr("rx", d.height / 2)
-            .attr("fill", color)
-            .attr("opacity", 0.85);
+          el.append("rect").attr("width", w).attr("height", h)
+            .attr("rx", h / 2).attr("fill", color).attr("opacity", 0.85);
         } else if (d.type === "hexagon") {
-          var w = d.width, h = d.height, indent = 15;
           el.append("polygon")
             .attr("points",
-              indent + ",0 " + (w - indent) + ",0 " +
-              w + "," + (h / 2) + " " +
-              (w - indent) + "," + h + " " +
-              indent + "," + h + " " +
-              "0," + (h / 2))
-            .attr("fill", color)
-            .attr("opacity", 0.85);
+              hexIndent+",0 "+(w-hexIndent)+",0 "+w+","+(h/2)+" "+
+              (w-hexIndent)+","+h+" "+hexIndent+","+h+" 0,"+(h/2))
+            .attr("fill", color).attr("opacity", 0.85);
         } else {
-          el.append("rect")
-            .attr("width", d.width)
-            .attr("height", d.height)
-            .attr("rx", 4)
-            .attr("fill", color)
-            .attr("opacity", 0.85);
+          el.append("rect").attr("width", w).attr("height", h)
+            .attr("rx", cornerRadius).attr("fill", color).attr("opacity", 0.85);
         }
 
-        el.append("text")
-          .attr("x", d.width / 2)
-          .attr("y", d.height / 2)
-          .attr("text-anchor", "middle")
-          .attr("dominant-baseline", "central")
-          .attr("fill", "white")
-          .attr("font-size", "11px")
-          .attr("font-weight", "bold")
-          .text(d.label);
+        var lines = d.label.split("\n");
+        if (lines.length === 1) {
+          el.append("text")
+            .attr("x", w / 2).attr("y", h / 2)
+            .attr("text-anchor", "middle").attr("dominant-baseline", "central")
+            .attr("fill", "white").attr("font-size", labelSize)
+            .attr("font-weight", "bold").text(d.label);
+        } else {
+          var lineHeight = 14;
+          var startY = h / 2 - (lines.length - 1) * lineHeight / 2;
+          lines.forEach(function(line, idx) {
+            el.append("text")
+              .attr("x", w / 2).attr("y", startY + idx * lineHeight)
+              .attr("text-anchor", "middle").attr("dominant-baseline", "central")
+              .attr("fill", "white").attr("font-size", labelSize)
+              .attr("font-weight", "bold").text(line);
+          });
+        }
       });
     </script>
     {% endif %}
