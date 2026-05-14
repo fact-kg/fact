@@ -3,9 +3,11 @@ from diagram.layout import Layout
 
 STEP_SHAPES = {
     "computer/algorithm/assign": "rect",
+    "computer/algorithm/assign_indexed": "rect",
     "computer/algorithm/if": "diamond",
     "computer/algorithm/indexed/for_each": "hexagon",
     "computer/algorithm/evaluate_expression": "rect",
+    "computer/algorithm/evaluate_expression_fact": "rect",
     "computer/algorithm/return": "rounded",
 }
 
@@ -146,15 +148,26 @@ class FlowLayout(Layout):
             if len(args) >= 2:
                 return f"{args[0]} {cond}\n{args[1]}?"
             return f"{cond}?"
+        if step_type == "computer/algorithm/assign_indexed":
+            container = step_as.get("container", "")
+            idx = step_as.get("index", "")
+            frm = step_as.get("from", "")
+            return f"{container}[{idx}] = {frm}"
         if step_type == "computer/algorithm/indexed/for_each":
             idx = step_as.get("index", "i")
             frm = step_as.get("from", 0)
-            to = step_as.get("to_length", "?")
-            return f"for {idx}={frm}..len({to})"
+            to = step_as.get("to_length", step_as.get("to", "?"))
+            if step_as.get("to_length"):
+                return f"for {idx}={frm}..len({to})"
+            return f"for {idx}={frm}..{to}"
         if step_type == "computer/algorithm/return":
             var = step_as.get("variable", "")
             return f"return {var}"
         if step_type == "computer/algorithm/evaluate_expression":
-            expr = step_as.get("expression", "")
-            return f"eval({expr})"
+            result = step_as.get("result_variable", "")
+            return f"{result} = expr"
+        if step_type == "computer/algorithm/evaluate_expression_fact":
+            expr = step_as.get("expression_fact", "")
+            result = step_as.get("result_variable", "")
+            return f"{result} = eval({expr})"
         return step_name

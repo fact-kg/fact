@@ -42,8 +42,14 @@ class AlgorithmExecutor:
             result = self._exec_if(step_as, variables, steps)
         elif step_type == "computer/algorithm/indexed/for_each":
             result = self._exec_for_each(step_as, variables, steps)
+        elif step_type == "computer/algorithm/assign_indexed":
+            result = self._exec_assign_indexed(step_as, variables)
+        elif step_type == "computer/algorithm/swap":
+            result = self._exec_swap(step_as, variables)
         elif step_type == "computer/algorithm/evaluate_expression":
-            result = self._exec_evaluate_expression(step_as, variables)
+            result = self._exec_evaluate_expression_inline(step_as, variables)
+        elif step_type == "computer/algorithm/evaluate_expression_fact":
+            result = self._exec_evaluate_expression_fact(step_as, variables)
         elif step_type == "computer/algorithm/return":
             return self._exec_return(step_as, variables)
 
@@ -87,9 +93,12 @@ class AlgorithmExecutor:
 
     def _exec_for_each(self, step_as, variables, steps):
         index_name = step_as.get("index", "i")
-        from_val = int(step_as.get("from", 0))
+        from_val = int(self._resolve_value(step_as.get("from", 0), variables))
         to_length_key = step_as.get("to_length", "")
-        to_val = len(variables[to_length_key]) - 1
+        if to_length_key:
+            to_val = len(variables[to_length_key]) - 1
+        else:
+            to_val = int(self._resolve_value(step_as.get("to", 0), variables))
         body_step = step_as.get("body", "")
 
         for i in range(from_val, to_val + 1):
@@ -99,8 +108,29 @@ class AlgorithmExecutor:
         if index_name in variables:
             del variables[index_name]
 
-    def _exec_evaluate_expression(self, step_as, variables):
-        expr_path_key = step_as.get("expression", "")
+    def _exec_assign_indexed(self, step_as, variables):
+        container = step_as.get("container", "")
+        idx = int(self._resolve_value(step_as.get("index", ""), variables))
+        val = self._resolve_value(step_as.get("from", ""), variables)
+        variables[container][idx] = val
+
+    def _exec_swap(self, step_as, variables):
+        arr_name = step_as.get("array", "")
+        idx_a = self._resolve_value(step_as.get("index_a", ""), variables)
+        idx_b = self._resolve_value(step_as.get("index_b", ""), variables)
+        arr = variables[arr_name]
+        a, b = int(idx_a), int(idx_b)
+        arr[a], arr[b] = arr[b], arr[a]
+
+    def _exec_evaluate_expression_inline(self, step_as, variables):
+        expr_yaml = step_as.get("expression_yaml", "")
+        result_var = step_as.get("result_variable", "result")
+        import yaml
+        tree = yaml.safe_load(expr_yaml)
+        variables[result_var] = self.evaluator.evaluate(tree, dict(variables))
+
+    def _exec_evaluate_expression_fact(self, step_as, variables):
+        expr_path_key = step_as.get("expression_fact", "")
         expr_path = variables.get(expr_path_key, expr_path_key)
         result_var = step_as.get("result_variable", "result")
         info = load_fact_info(self.kg, expr_path)

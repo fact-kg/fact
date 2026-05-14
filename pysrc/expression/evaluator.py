@@ -16,6 +16,7 @@ SYMBOL_TO_FN = {
     "neg": operator.neg,
     "math.sqrt": math.sqrt,
     "math.sin": math.sin,
+    "len": len,
 }
 
 
