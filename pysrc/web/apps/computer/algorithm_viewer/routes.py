@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent.pare
 from expression import load_fact_info
 from diagram import FlowLayout, to_json
 from algorithm.codegen.python_gen import generate_python
+from algorithm.codegen.cpp_gen import generate_cpp
 
 router = APIRouter(prefix="/apps/computer/algorithm_viewer")
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
@@ -89,9 +90,14 @@ def algorithm_viewer(request: Request):
                     layout = FlowLayout()
                     diagram = layout.layout(steps, first_step)
                     diagram_data = to_json(diagram)
-                elif view == "code":
+                elif view == "python":
                     try:
                         generated_code = generate_python(kg, fact_path)
+                    except Exception as e:
+                        error = f"Code generation error: {e}"
+                elif view == "cpp":
+                    try:
+                        generated_code = generate_cpp(kg, fact_path)
                     except Exception as e:
                         error = f"Code generation error: {e}"
 

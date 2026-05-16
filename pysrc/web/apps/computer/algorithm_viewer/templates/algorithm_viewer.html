@@ -106,17 +106,27 @@
     {% endif %}
 
     {% if steps %}
-    <div style="display: flex; gap: 0.5em; margin-bottom: 1em;">
+    <div style="display: flex; gap: 0.5em; margin-bottom: 0.5em;">
       <a href="?fact={{ fact_path }}&view=flowchart"
          style="padding: 0.4em 1em; border-radius: 4px; text-decoration: none;
          {% if view == 'flowchart' %}background: var(--pico-primary); color: var(--pico-primary-inverse);{% endif %}">Flowchart</a>
       <a href="?fact={{ fact_path }}&view=text"
          style="padding: 0.4em 1em; border-radius: 4px; text-decoration: none;
          {% if view == 'text' %}background: var(--pico-primary); color: var(--pico-primary-inverse);{% endif %}">Text</a>
-      <a href="?fact={{ fact_path }}&view=code"
+      <a href="?fact={{ fact_path }}&view=python"
          style="padding: 0.4em 1em; border-radius: 4px; text-decoration: none;
-         {% if view == 'code' %}background: var(--pico-primary); color: var(--pico-primary-inverse);{% endif %}">Python</a>
+         {% if view in ('python', 'cpp') %}background: var(--pico-primary); color: var(--pico-primary-inverse);{% endif %}">Code</a>
     </div>
+    {% if view in ('python', 'cpp') %}
+    <div style="display: flex; gap: 0.3em; margin-bottom: 1em; margin-left: 1em;">
+      <a href="?fact={{ fact_path }}&view=python"
+         style="padding: 0.3em 0.8em; border-radius: 4px; text-decoration: none; font-size: 0.9em;
+         {% if view == 'python' %}background: var(--pico-secondary); color: var(--pico-secondary-inverse);{% endif %}">Python</a>
+      <a href="?fact={{ fact_path }}&view=cpp"
+         style="padding: 0.3em 0.8em; border-radius: 4px; text-decoration: none; font-size: 0.9em;
+         {% if view == 'cpp' %}background: var(--pico-secondary); color: var(--pico-secondary-inverse);{% endif %}">C++</a>
+    </div>
+    {% endif %}
     {% endif %}
 
     {% if view == 'text' and steps %}
@@ -170,7 +180,7 @@
     </details>
     {% endfor %}
 
-    {% elif view == 'code' and generated_code %}
+    {% elif view in ('python', 'cpp') and generated_code %}
     <pre style="padding: 1em; border-radius: var(--pico-border-radius); overflow-x: auto;"><code>{{ generated_code }}</code></pre>
 
     {% elif diagram_data %}
