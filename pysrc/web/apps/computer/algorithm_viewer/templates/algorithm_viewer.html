@@ -113,6 +113,9 @@
       <a href="?fact={{ fact_path }}&view=text"
          style="padding: 0.4em 1em; border-radius: 4px; text-decoration: none;
          {% if view == 'text' %}background: var(--pico-primary); color: var(--pico-primary-inverse);{% endif %}">Text</a>
+      <a href="?fact={{ fact_path }}&view=code"
+         style="padding: 0.4em 1em; border-radius: 4px; text-decoration: none;
+         {% if view == 'code' %}background: var(--pico-primary); color: var(--pico-primary-inverse);{% endif %}">Python</a>
     </div>
     {% endif %}
 
@@ -166,6 +169,9 @@
       </table>
     </details>
     {% endfor %}
+
+    {% elif view == 'code' and generated_code %}
+    <pre style="padding: 1em; border-radius: var(--pico-border-radius); overflow-x: auto;"><code>{{ generated_code }}</code></pre>
 
     {% elif diagram_data %}
     <div id="diagram-container"></div>

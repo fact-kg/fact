@@ -328,3 +328,140 @@ For our use case (full control, D3 rendering), the useful takeaways are:
 - Algorithm executor has hardcoded bracket parsing for array access
   (should use expression evaluator)
 - No interactive algorithm execution app (only flowchart viewing)
+
+---
+
+## Session — May 14, 2026
+
+### Work Done
+
+#### Declarative and constraint layers on algorithms
+
+Added to find_max and bubble_sort:
+- `precondition` — input constraints (e.g., "len(array) > 0")
+- `postcondition` — output guarantees (e.g., "result >= all elements")
+- `loop_invariant` — what's true each iteration
+- `description` on every step — natural language intent
+- `description` on variables — what each variable represents
+
+Created fact types: `computer/algorithm/precondition.yaml`,
+`postcondition.yaml`, `invariant.yaml`. Updated `math/variable.yaml` and
+`computer/algorithm/step.yaml` with description property.
+
+#### Bubble sort algorithm
+
+Created `computer/algorithm/array/bubble_sort.yaml` — proper version with
+inner bound `len(array) - i - 2`. Features:
+- Nested for_each loops (outer and inner)
+- Inline expression evaluation for computed values (j+1, inner bound)
+- Indexed assignment (`assign_indexed`) for array element writes
+- All variables declared (i, j, inner_bound, j_next, temp)
+- 4 test cases, all passing
+
+#### New step types and facts
+
+- `computer/algorithm/assign_indexed.yaml` — write to array at index
+- `computer/algorithm/evaluate_expression_fact.yaml` — evaluate external
+  expression fact (separated from inline evaluation)
+- `computer/algorithm/evaluate_expression.yaml` — updated for inline
+  expression_yaml
+- `math/algebra/operation/length.yaml` + Python `len` binding
+- `computer/algorithm/rationale.yaml` — design rationale type
+
+#### Algorithm executor updates
+
+- `_exec_assign_indexed` — indexed container assignment
+- `_exec_evaluate_expression_inline` — parse and evaluate inline YAML
+- `_exec_evaluate_expression_fact` — load and evaluate external fact
+- `for_each` now supports `to` (variable reference) alongside `to_length`
+- FlowLayout updated with new step shapes and labels
+
+#### Algorithm viewer — text view
+
+Added view toggle (Flowchart / Text) to the algorithm viewer app. Text view
+shows constraints table, variables table, and expandable step details with
+all properties and descriptions.
+
+#### Design rationale on algorithms
+
+Added structured rationale to find_max and bubble_sort using YAML-in-YAML:
+
+```yaml
+rationale_yaml:
+  understanding:
+    problem: "sort elements in ascending order"
+    constraints: ["can compare", "can swap"]
+  planning:
+    observation: "comparing adjacent and swapping is simplest"
+    insight: "one pass bubbles largest to end"
+    question: "does one pass suffice?"
+    conclusion: "no, repeat n times"
+  alternatives:
+    - name: "merge sort"
+      tradeoff: "O(n log n) but needs extra memory"
+```
+
+Research confirmed this is novel — no existing framework combines reasoning
+chains with machine-readable format. DRL, QOC, and Polya's framework are
+closest but none are structured data.
+
+### Design Decisions
+
+#### assign vs assign_indexed — separate types
+
+**Decision:** `assign_indexed` is a separate step type, not `assign` with
+optional `index`. Cannot reliably check "is optional field set" in `as` syntax.
+
+#### evaluate_expression vs evaluate_expression_fact
+
+**Decision:** Two types. Inline expressions use `expression_yaml` (YAML-in-YAML
+on the step). External expressions use `expression_fact` (path to a fact).
+No ambiguity about which is which.
+
+#### All variables must be declared
+
+**Decision:** Every variable an algorithm uses (loop indices, temporaries,
+bounds) must be declared as a `has` entry with description. Like Fortran.
+
+**Rationale:** Undeclared variables work in the executor but are invisible
+as knowledge. Declaration adds documentation, enables verification, and
+makes the algorithm self-describing.
+
+#### Five layers of algorithm knowledge
+
+An algorithm fact now supports five simultaneous layers:
+1. **Procedural** — steps with next links
+2. **Declarative** — descriptions on steps and variables
+3. **Constraints** — pre/postconditions, loop invariants
+4. **Computational** — inline expressions, operation references
+5. **Epistemic** — design rationale (understanding, planning, alternatives)
+
+### Research Notes
+
+#### Knowledge quality metrics
+
+Zaveri et al. (2016) framework, OQuaRE ontology metrics, SHACL constraint
+satisfaction rate. No standard for multi-representation quality — open gap.
+
+#### Algorithm design rationale frameworks
+
+DRL (Decision Representation Language), QOC (Questions Options Criteria),
+Polya's How to Solve It, Dijkstra's Calculational Method. None combine
+reasoning chains with machine-readable format. Our YAML rationale structure
+(understanding → planning → alternatives) appears novel.
+
+### Observations
+
+#### LLM reasoning with multiple layers
+
+With all five layers, LLM reasoning about algorithms is qualitatively
+different: steps for execution, descriptions for intent, constraints for
+correctness verification, rationale for analogical reasoning across domains.
+Each layer serves a different cognitive function.
+
+#### Writing algorithms as facts is laborious but valuable
+
+Bubble sort: 5 lines in Python, ~120 lines in YAML. But the YAML version
+is executable, testable, visualizable, has constraints, rationale, and
+descriptions. The Python version is dead code — it does one thing in one
+language with no explanation.

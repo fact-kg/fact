@@ -117,6 +117,11 @@ class FlowLayout(Layout):
 
     def _place_body_chain(self, step_name, steps, diagram, row, col,
                           branch_col, visited):
+        """Place a chain of steps vertically in the body column.
+
+        Follows 'next' links downward. Handles nested if and for_each.
+        Returns the name of the last step placed.
+        """
         if step_name in visited or step_name not in steps:
             return None
 
@@ -124,16 +129,24 @@ class FlowLayout(Layout):
         step_type, step_as = self._step_info(step_name, steps)
         self._add_node(diagram, step_name, step_type, step_as, row, col)
         last_step = step_name
+        next_row = row + 1
 
         if step_type == "computer/algorithm/if":
-            then_step = step_as.get("then", "")
-            if then_step and then_step in steps and then_step not in visited:
-                then_type, then_as = self._step_info(then_step, steps)
-                self._add_node(diagram, then_step, then_type, then_as,
-                               row, col + 1)
-                diagram.add_edge(step_name, then_step, label="yes")
-                visited.add(then_step)
-                last_step = then_step
+            self._place_if_branch(step_name, step_as, steps, diagram,
+                                  row, col + 1, visited)
+
+        if step_type == "computer/algorithm/indexed/for_each":
+            next_row = self._place_for_each(step_name, step_as, steps,
+                                            diagram, row, col + 1, visited)
+
+        # follow next link within the body
+        next_step = step_as.get("next", "")
+        if next_step and next_step in steps and next_step not in visited:
+            diagram.add_edge(step_name, next_step)
+            result = self._place_body_chain(next_step, steps, diagram,
+                                            next_row, col, branch_col, visited)
+            if result:
+                last_step = result
 
         return last_step
 

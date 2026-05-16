@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent.pare
 
 from expression import load_fact_info
 from diagram import FlowLayout, to_json
+from algorithm.codegen.python_gen import generate_python
 
 router = APIRouter(prefix="/apps/computer/algorithm_viewer")
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
@@ -69,6 +70,7 @@ def algorithm_viewer(request: Request):
     constraints = {}
     variables = {}
     diagram_data = None
+    generated_code = ""
     error = ""
 
     if fact_path:
@@ -83,10 +85,15 @@ def algorithm_viewer(request: Request):
                 description, steps, first_step, constraints, variables = extract_algorithm(info)
                 if not steps:
                     error = f"No steps found in: {fact_path}"
-                elif first_step and view == "flowchart":
+                if first_step and view == "flowchart":
                     layout = FlowLayout()
                     diagram = layout.layout(steps, first_step)
                     diagram_data = to_json(diagram)
+                elif view == "code":
+                    try:
+                        generated_code = generate_python(kg, fact_path)
+                    except Exception as e:
+                        error = f"Code generation error: {e}"
 
     if "application/json" in request.headers.get("accept", ""):
         return JSONResponse({
@@ -104,5 +111,6 @@ def algorithm_viewer(request: Request):
         "constraints": constraints,
         "variables": variables,
         "diagram_data": diagram_data,
+        "generated_code": generated_code,
         "error": error,
     })
