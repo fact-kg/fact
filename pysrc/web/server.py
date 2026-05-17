@@ -38,6 +38,41 @@ app.include_router(polynomial_plot_router)
 app.include_router(expression_diagram_router)
 app.include_router(algorithm_viewer_router)
 
+from rule.engine import RuleEngine
+rule_engine = RuleEngine(kg, ROOTS)
+
+
+@app.get("/query")
+def query(q: str = ""):
+    if not q:
+        return JSONResponse({"error": "provide ?q= parameter", "results": []})
+    parts = q.strip().split()
+
+    # find command
+    if parts[0] == "find" and len(parts) >= 2:
+        substring = " ".join(parts[1:]).lower()
+        matches = [fp for fp in kg.get_dict().keys() if substring in fp.lower()]
+        matches.sort()
+        return JSONResponse({"query": q, "results": matches})
+
+    # transitive command
+    if parts[0] == "transitive" and len(parts) >= 2:
+        fact_path = parts[1]
+        relation = parts[2] if len(parts) > 2 else "part"
+        results = rule_engine.find_transitive(fact_path, relation)
+        return JSONResponse({"query": q, "results": results})
+
+    # rules command
+    if q.strip() == "rules":
+        rules = [{"path": r["path"], "when": r["when"], "then": r["then"]}
+                 for r in rule_engine.rules]
+        return JSONResponse({"rules": rules})
+
+    # pattern query
+    results = rule_engine.query(q)
+    return JSONResponse({"query": q, "results": results})
+
+
 def make_breadcrumb(path):
     parts = path.split("/")
     crumbs = []
