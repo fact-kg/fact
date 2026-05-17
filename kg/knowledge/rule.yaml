@@ -1,0 +1,7 @@
+- is: inference rule
+- has:
+    when:
+      type: str
+- has:
+    then:
+      type: str

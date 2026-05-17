@@ -1,5 +1,6 @@
 - is:
     type: astronomy/galaxy
+- part: astronomy/universe
 - has:
     mass:
       type: physics/unit/si/kilogram
