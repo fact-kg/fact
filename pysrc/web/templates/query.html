@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Query — Fact KG{% endblock %}
+{% block content %}
+<h1>Query</h1>
+
+<form id="query-form" onsubmit="runQuery(); return false;">
+  <div class="grid">
+    <div style="grid-column: span 2;">
+      <input type="text" id="query-input" placeholder="?X part astronomy/universe"
+             autofocus autocomplete="off">
+    </div>
+    <div>
+      <button type="submit">Run</button>
+    </div>
+  </div>
+</form>
+
+<details>
+  <summary>Help</summary>
+  <table>
+    <tbody>
+      <tr><td><code>?X part ?Y</code></td><td>find facts with part relationship</td></tr>
+      <tr><td><code>?X is ?Y</code></td><td>find facts by type</td></tr>
+      <tr><td><code>?X has ?prop</code></td><td>find facts that have a property</td></tr>
+      <tr><td><code>?X has ?prop ?val</code></td><td>find facts with property value</td></tr>
+      <tr><td><code>find &lt;substring&gt;</code></td><td>search fact paths</td></tr>
+      <tr><td><code>transitive &lt;fact&gt; [part|is]</code></td><td>follow transitive chain</td></tr>
+      <tr><td><code>rules</code></td><td>list inference rules</td></tr>
+    </tbody>
+  </table>
+  <p>Variables start with <code>?</code>. Join conditions with <code>AND</code>.</p>
+</details>
+
+<div id="results"></div>
+
+<script>
+  function runQuery() {
+    var q = document.getElementById('query-input').value.trim();
+    if (!q) return;
+    var resultsDiv = document.getElementById('results');
+    resultsDiv.innerHTML = '<p>Running...</p>';
+
+    fetch('/query?q=' + encodeURIComponent(q))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var html = '';
+
+        if (data.error) {
+          html = '<p><mark>' + data.error + '</mark></p>';
+        } else if (data.rules) {
+          html = '<h3>Rules (' + data.rules.length + ')</h3><table><thead><tr><th>Path</th><th>When</th><th>Then</th></tr></thead><tbody>';
+          data.rules.forEach(function(r) {
+            html += '<tr><td><a href="/fact/' + r.path + '">' + r.path + '</a></td>'
+              + '<td><code>' + r.when + '</code></td>'
+              + '<td><code>' + r.then + '</code></td></tr>';
+          });
+          html += '</tbody></table>';
+        } else if (data.results) {
+          if (Array.isArray(data.results) && data.results.length > 0) {
+            if (typeof data.results[0] === 'string') {
+              html = '<p>' + data.results.length + ' results</p><ul>';
+              data.results.forEach(function(r) {
+                html += '<li><a href="/fact/' + r + '">' + r + '</a></li>';
+              });
+              html += '</ul>';
+            } else {
+              html = '<p>' + data.results.length + ' results</p><table><thead><tr>';
+              var keys = Object.keys(data.results[0]);
+              keys.forEach(function(k) { html += '<th>' + k + '</th>'; });
+              html += '</tr></thead><tbody>';
+              data.results.forEach(function(r) {
+                html += '<tr>';
+                keys.forEach(function(k) {
+                  var v = r[k];
+                  html += '<td><a href="/fact/' + v + '">' + v + '</a></td>';
+                });
+                html += '</tr>';
+              });
+              html += '</tbody></table>';
+            }
+          } else {
+            html = '<p>No results</p>';
+          }
+        }
+
+        resultsDiv.innerHTML = html;
+      })
+      .catch(function(err) {
+        resultsDiv.innerHTML = '<p><mark>Error: ' + err + '</mark></p>';
+      });
+  }
+
+  // run query from URL if present
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('q')) {
+    document.getElementById('query-input').value = params.get('q');
+    runQuery();
+  }
+</script>
+{% endblock %}

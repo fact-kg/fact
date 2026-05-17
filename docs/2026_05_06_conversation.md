@@ -465,3 +465,146 @@ Bubble sort: 5 lines in Python, ~120 lines in YAML. But the YAML version
 is executable, testable, visualizable, has constraints, rationale, and
 descriptions. The Python version is dead code — it does one thing in one
 language with no explanation.
+
+---
+
+## Session — May 16, 2026
+
+### Work Done
+
+#### Code generation from algorithm facts
+
+Created `pysrc/algorithm/codegen/` with two generators:
+
+**`python_gen.py`** — generates Python functions from algorithm facts.
+Functional design: dispatch table mapping step types to generator functions,
+chain walker following `next` links, expression-to-Python converter resolving
+operations through `python_impl` facts. Generated code looks human-written.
+
+**`cpp_gen.py`** — generates C++ template functions. Reuses `resolve_op_symbol`
+from `python_gen`. Handles C++-specific syntax: `auto` declarations (tracks
+first-use vs reassignment), C-style for loops, `.size()` instead of `len()`,
+curly braces, `template<typename T>`.
+
+Both generators produce clean, idiomatic code. Generated Python passes the
+same test facts that verify the YAML algorithm directly.
+
+Algorithm viewer app updated with three main tabs: Flowchart, Text, Code.
+Code tab has language subtabs (Python, C++).
+
+#### Flowchart fix for nested loops
+
+`_place_body_chain` now follows `next` links within the body, enabling
+nested loops (bubble sort's inner loop inside outer loop) to render fully
+in the flowchart.
+
+#### Rule engine and query system
+
+Created `pysrc/rule/` with three modules:
+
+**`pattern.py`** — parses rule patterns into structured conditions. Syntax:
+`?X part ?Y`, `?X is ?Y`, `?X has ?prop`, `?X has ?prop ?val`. Variables
+start with `?`. `AND` joins conditions.
+
+**`matcher.py`** — matches conditions against the KG with variable binding
+and unification. Each condition takes current bindings, returns extended
+bindings. AND is sequential filtering. Dispatch table for condition types.
+`MAX_BINDING_VARS = 20` safety limit.
+
+**`engine.py`** — `RuleEngine` class loads all `knowledge/rule` facts at
+init, parses their `when`/`then` patterns. Provides `query()` for pattern
+matching with rule inference, and `find_transitive()` for following chains.
+Handles primitives (`str`, `num`, `list`) as terminal types.
+
+#### Rule facts
+
+Created `kg/knowledge/rule.yaml` — base type with `when` and `then`
+properties.
+
+Created `kg/knowledge/rule/transitive_part.yaml` — first rule:
+`?X part ?Y AND ?Y part ?Z => ?X part ?Z`. Derives that luna is part of
+the universe through the chain luna → earth → solar_system → milky_way →
+universe.
+
+#### Query tool
+
+**`pysrc/rule/query.py`** — interactive and single-shot query tool.
+Commands: pattern queries, `find` (substring search), `transitive`,
+`rules`, `help`. `query.bat` with absolute paths for running from any
+location.
+
+#### Query API endpoint
+
+Added `/query` endpoint to the FastAPI web server. Same capabilities as
+the CLI tool but via HTTP/JSON. No startup cost — uses the already-loaded
+KG and rule engine.
+
+LLM agents (including Claude) can query the live KG via:
+`https://fact-kg.onrender.com/query?q=find+bubble`
+
+Successfully tested: an LLM grounding itself against a verified knowledge
+graph via a live REST API, using facts instead of training data.
+
+### Design Decisions
+
+#### Code generation — functional style
+
+**Decision:** Pure functions with dispatch table, not a class with methods.
+Each step type has a generator function. `ctx` dict carries state.
+
+**Rationale:** Easier to extend (one function + one table entry per step
+type), easier to read, no hidden state. C++ generator reuses Python
+generator's `resolve_op_symbol` directly.
+
+#### Rules live in domain paths
+
+**Decision:** Rules are mixed with domain facts, not in a separate
+`knowledge/rule/` hierarchy. The base type is at `kg/knowledge/rule.yaml`
+but individual rules live near the domain they reason about.
+
+**Rationale:** Rules about elements should live near elements. Rules about
+algorithms near algorithms. The `is: type: knowledge/rule` tag identifies
+them regardless of location.
+
+#### Pattern language mirrors KG tags
+
+**Decision:** Three pattern types (`is`, `part`, `has`) matching three tags.
+No extra abstractions.
+
+**Rationale:** The query language should be as simple as the knowledge
+representation. If the KG has three tags, the query language needs three
+patterns.
+
+#### Type chains terminate at primitives
+
+**Decision:** `str`, `num`, `list` are terminal types. `find_transitive`
+stops at them without error.
+
+**Rationale:** Every concept eventually reduces to a word (str). This is
+both practical (no infinite chains) and philosophically honest (at the
+bottom, every concept is a name).
+
+#### Query API on existing web server
+
+**Decision:** `/query` endpoint on FastAPI, not a separate daemon or gRPC
+service.
+
+**Rationale:** The web server already has the KG loaded. Adding an endpoint
+is 30 lines. No new process, no new protocol, no new deployment. LLM
+agents can use WebFetch to query it.
+
+### Observations
+
+#### LLM grounded by KG via live API
+
+Successfully demonstrated: Claude querying the Fact KG at
+`fact-kg.onrender.com/query` to get verified facts instead of relying on
+training data. This is the "infrastructure for AI that reasons" promise
+working in practice.
+
+#### The system keeps emerging naturally
+
+Query tool → rule engine → API endpoint. Each piece emerged from need:
+rules needed queries, queries needed an API for LLM access. The `is`/`has`/
+`part` foundation held through code generation, rule inference, and live
+API querying without any changes to the core.

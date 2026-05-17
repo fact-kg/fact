@@ -42,6 +42,11 @@ from rule.engine import RuleEngine
 rule_engine = RuleEngine(kg, ROOTS)
 
 
+@app.get("/query-app", response_class=HTMLResponse)
+def query_app(request: Request):
+    return templates.TemplateResponse(request, "query.html", {})
+
+
 @app.get("/query")
 def query(q: str = ""):
     if not q:
@@ -156,13 +161,9 @@ def search(request: Request, q: str = ""):
             "results": [],
         })
     q_lower = q.lower()
-    results = []
-    for root in ROOTS:
-        for yaml_file in root.rglob("*.yaml"):
-            fact_path = str(yaml_file.relative_to(root).with_suffix('')).replace('\\', '/')
-            if q_lower in fact_path.lower():
-                results.append({"path": fact_path, "name": fact_path.rsplit("/", 1)[-1]})
-    results.sort(key=lambda r: r["path"])
+    matches = [fp for fp in kg.get_dict().keys() if q_lower in fp.lower()]
+    matches.sort()
+    results = [{"path": fp, "name": fp.rsplit("/", 1)[-1]} for fp in matches]
 
     if "application/json" in request.headers.get("accept", ""):
         return JSONResponse(results)
